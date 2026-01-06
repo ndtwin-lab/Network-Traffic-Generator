@@ -1,4 +1,26 @@
 """
+Copyright (c) 2025-present
+ 
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+ 
+  http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+NDTwin core contributors (as of January 15, 2026):
+    Prof. Shie-Yuan Wang <National Yang Ming Chiao Tung University; CITI, Academia Sinica> 
+    Ms. Xiang-Ling Lin <CITI, Academia Sinica>
+    Mr. Po-Yu Juan <CITI, Academia Sinica>
+    Mr. Tsu-Li Mou <CITI, Academia Sinica> 
+    Mr. Zhen-Rong Wu <National Taiwan Normal University>
+    Mr. Ting-En Chang <University of Wisconsin, Milwaukee>
+    Mr. Yu-Cheng Chen <National Yang Ming Chiao Tung University>
 
 Get current hosts in topology and paths of host pair.
 
@@ -11,8 +33,8 @@ from collections import deque
 import ipaddress
 import numpy as np
 
-GET_HOSTS = "http://10.10.10.2:8000/ndt/get_graph_data"
-GET_PATHS = "http://10.10.10.2:8000/ndt/get_path_switch_count"
+GET_HOSTS = ""
+GET_PATHS = ""
 
 
 def get_hosts():
@@ -73,17 +95,17 @@ def distance_partition(hosts = None, ndtwin_server=None):
         raise ConnectionError("NDTwin Server not up...")
 
     # get paths of host pair
-    # for client in hosts:
-    #     for server in hosts:
-    #         if client != server:
-    #             cmd = GET_PATHS+"?src_ip="+client['ip']+"&dst_ip="+server['ip']
-    #             response = requests.get(cmd)
-    #             if response.status_code == 200:
-    #                 response = json.loads(response.text)
-    #                 path = response["switch_count"]
-    #                 unique_paths.setdefault(path, []).append((client, server))
-    #             else:
-    #                 raise ConnectionError("NDTwin Server not up...")
+    for client in hosts:
+        for server in hosts:
+            if client != server:
+                cmd = GET_PATHS+"?src_ip="+client['ip']+"&dst_ip="+server['ip']
+                response = requests.get(cmd)
+                if response.status_code == 200:
+                    response = json.loads(response.text)
+                    path = response["switch_count"]
+                    unique_paths.setdefault(path, []).append((client, server))
+                else:
+                    raise ConnectionError("NDTwin Server not up...")
                 
     
     # partition the paths
@@ -152,13 +174,4 @@ def partition_method(unique_paths):
     return clusters
 
 if __name__ == '__main__':
-    import sys
-    sys.path.append('/home/alen/.local/lib/python3.12/site-packages')
-    import numpy as np
-    # print(partition_method([1,2,3,4,5,6,7,8,9,10]))
-    # print(partition_method([1,2,3,20]))
-    # print(partition_method([1,2,3,20,60]))
-    # print(partition_method([1,3,5]))
-    # print(partition_method([1,3,5,7]))
-    # print(partition_method([1,3,5,7,9]))
     print(distance_partition())
