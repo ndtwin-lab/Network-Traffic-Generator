@@ -1,0 +1,85 @@
+{
+    "traffic_generator(iperf_or_iperf3)": "iperf3",
+    "flow_size_csv": "./cesnet_2022/distribution_flow_size.csv",
+    "flow_duration_csv": "./cesnet_2022/distribution_flow_duration.csv",
+    "flow_sending_rate_csv": "./cesnet_2022/distribution_flow_sending_rate.csv",
+    "intervals": [
+        {
+            "interval_duration(d/h/m/s)": "5s",
+            "varied_traffic": {
+                "flow_arrival_rate(flow/sec)": 3,
+                "flow_distance_probability": {
+                    "near": 0.0,
+                    "middle": 0.3,
+                    "far": 0.7
+                },
+                "flow_type_probability": {
+                    "unlimited_size_unlimited_rate_limited_duration_tcp": 0.3,
+                    "limited_size_unlimited_rate_tcp": 0.3,
+                    "unlimited_size_limited_rate_limited_duration_tcp": 0.4
+                }
+            },
+            "fixed_traffic": {
+                "fixed_flow_number": 2,
+                "flow_distance_probability": {
+                    "near": 0.0,
+                    "middle": 0.5,
+                    "far": 0.5
+                },
+                "flow_type_probability": {
+                    "limited_size_unlimited_rate_tcp": 0.0,
+                    "limited_size_limited_rate_tcp": 1.0,
+                    "unlimited_size_limited_rate_unlimited_duration_udp": 0.0,
+                    "unlimited_size_limited_rate_limited_duration_tcp": 0.0
+                }
+            }
+        },
+        {
+            "interval_duration(d/h/m/s)": "5s",
+            "varied_traffic": {
+                "flow_arrival_rate(flow/sec)": 3,
+                "flow_distance_probability": {
+                    "near": 0.0,
+                    "middle": 0.3,
+                    "far": 0.7
+                },
+                "flow_type_probability": {
+                    "unlimited_size_unlimited_rate_limited_duration_tcp": 0.0,
+                    "limited_size_unlimited_rate_tcp": 0.9,
+                    "unlimited_size_limited_rate_limited_duration_tcp": 0.1
+                }
+            },
+            "fixed_traffic": {
+                "fixed_flow_number": 10,
+                "flow_distance_probability": {
+                    "near": 0.0,
+                    "middle": 0.5,
+                    "far": 0.5
+                },
+                "flow_type_probability": {
+                    "limited_size_unlimited_rate_tcp": 0.0,
+                    "limited_size_limited_rate_tcp": 0.0,
+                    "unlimited_size_limited_rate_unlimited_duration_udp": 0.0,
+                    "unlimited_size_limited_rate_limited_duration_tcp": 1.0
+                }
+            }
+        },
+        {
+            "interval_duration(d/h/m/s)": "1s",
+            "varied_traffic": {
+                "flow_arrival_rate(flow/sec)": 2,
+                "flow_distance_probability": {
+                    "near": 0.0,
+                    "middle": 0.7,
+                    "far": 0.3
+                },
+                "flow_type_probability": {
+                    "unlimited_size_limited_rate_unlimited_duration_tcp": 1.0,
+                    "limited_size_unlimited_rate_tcp": 0.0,
+                    "unlimited_size_limited_rate_limited_duration_tcp": 0.0
+                }
+            }
+            
+        }
+    ]
+}

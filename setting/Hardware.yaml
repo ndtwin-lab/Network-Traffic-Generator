@@ -1,0 +1,203 @@
+---
+Hardware_Testbed:                
+  hostname: "hardware_testbed"
+  data:                  
+    ndtwin_server: "http://10.10.10.2:8000"
+    recycle_interval: 10  # in seconds
+    sleep_time: # sleep time between flow generation requests
+      min: 0.4
+      max: 1.3
+    ports_limitation: # used port range and excluded ports for flow generation
+      min_port: 5204
+      max_port: 10204
+      exclude_ports:
+        - 8000
+    log_level: "TRACE"  # TRACE, DEBUG, INFO, WARNING, ERROR
+
+worker_node1:                
+  hostname: 10.10.10.5  
+  username: "server1"   
+  password: "nslab123"  
+  port: 22 
+  groups:               
+    - worker_node_servers
+  data: # for configuring API server which receive flow generation requests
+    worker_node_server: "http://10.10.10.5:8000"
+    retries: 5  # retry attempts for transient failures
+    backoff_min_ms: 250.0  # minimum backoff time in milliseconds between
+    backoff_max_ms: 500.0  # maximum backoff time in milliseconds between
+    thread_count: 500  # max concurrent threads for handling requests
+    on_site_hosts:
+        h1 : "192.168.1.1"
+        h2 : "192.168.1.2"
+        h3 : "192.168.1.3"
+        h4 : "192.168.1.4"
+        h5 : "192.168.1.5"
+        h6 : "192.168.1.6"
+        h7 : "192.168.1.7"
+        h8 : "192.168.1.8"
+        h9 : "192.168.1.9"
+        h10 : "192.168.1.10"
+        h11 : "192.168.1.11"
+        h12 : "192.168.1.12"
+        h13 : "192.168.1.13"
+        h14 : "192.168.1.14"
+        h15 : "192.168.1.15"
+        h16 : "192.168.1.16"
+        h17 : "192.168.1.17"
+        h18 : "192.168.1.18"
+        h19 : "192.168.1.19"
+        h20 : "192.168.1.20"
+        h21 : "192.168.1.21"
+        h22 : "192.168.1.22"
+        h23 : "192.168.1.23"
+        h24 : "192.168.1.24"
+        h25 : "192.168.1.25"
+        h26 : "192.168.1.26"
+        h27 : "192.168.1.27"
+        h28 : "192.168.1.28"
+        h29 : "192.168.1.29"
+        h30 : "192.168.1.30"
+        h31 : "192.168.1.31"
+        h32 : "192.168.1.32"
+
+worker_node2:
+  hostname: 10.10.10.6
+  username: "server2"
+  password: "nslab123"
+  port: 22
+  groups:
+    - worker_node_servers
+  data:
+    worker_node_server: "http://10.10.10.6:8000"
+    retries: 10  # retry attempts for transient failures
+    backoff_min_ms: 250.0  # minimum backoff time in milliseconds between
+    backoff_max_ms: 500.0  # maximum backoff time in milliseconds between
+    thread_count: 500  # max concurrent threads for handling requests
+    on_site_hosts: # hostname in NDTwin config file and it's corresponding IP address in the network
+        h33 : "192.168.1.33"
+        h34 : "192.168.1.34"
+        h35 : "192.168.1.35"
+        h36 : "192.168.1.36"
+        h37 : "192.168.1.37"
+        h38 : "192.168.1.38"
+        h39 : "192.168.1.39"
+        h40 : "192.168.1.40"
+        h41 : "192.168.1.41"
+        h42 : "192.168.1.42"
+        h43 : "192.168.1.43"
+        h44 : "192.168.1.44"
+        h45 : "192.168.1.45"
+        h46 : "192.168.1.46"
+        h47 : "192.168.1.47"
+        h48 : "192.168.1.48"
+        h49 : "192.168.1.49"
+        h50 : "192.168.1.50"
+        h51 : "192.168.1.51"
+        h52 : "192.168.1.52"
+        h53 : "192.168.1.53"
+        h54 : "192.168.1.54"
+        h55 : "192.168.1.55"
+        h56 : "192.168.1.56"
+        h57 : "192.168.1.57"
+        h58 : "192.168.1.58"
+        h59 : "192.168.1.59"
+        h60 : "192.168.1.60"
+        h61 : "192.168.1.61"
+        h62 : "192.168.1.62"
+        h63 : "192.168.1.63"
+        h64 : "192.168.1.64"
+
+worker_node3:
+  hostname: 10.10.10.7
+  username: "server3"
+  password: "nslab123"
+  port: 22
+  groups:
+    - worker_node_servers
+  data:
+    worker_node_server: "http://10.10.10.7:8000"
+    retries: 10  # retry attempts for transient failures
+    backoff_min_ms: 250.0  # minimum backoff time in milliseconds between
+    backoff_max_ms: 500.0  # maximum backoff time in milliseconds between
+    thread_count: 500  # max concurrent threads for handling requests
+    on_site_hosts:
+        h65 : "192.168.1.65"
+        h66 : "192.168.1.66"
+        h67 : "192.168.1.67"
+        h68 : "192.168.1.68"
+        h69 : "192.168.1.69"
+        h70 : "192.168.1.70"
+        h71 : "192.168.1.71"
+        h72 : "192.168.1.72"
+        h73 : "192.168.1.73"
+        h74 : "192.168.1.74"
+        h75 : "192.168.1.75"
+        h76 : "192.168.1.76"
+        h77 : "192.168.1.77"
+        h78 : "192.168.1.78"
+        h79 : "192.168.1.79"
+        h80 : "192.168.1.80"
+        h81 : "192.168.1.81"
+        h82 : "192.168.1.82"
+        h83 : "192.168.1.83"
+        h84 : "192.168.1.84"
+        h85 : "192.168.1.85"
+        h86 : "192.168.1.86"
+        h87 : "192.168.1.87"
+        h88 : "192.168.1.88"
+        h89 : "192.168.1.89"
+        h90 : "192.168.1.90"
+        h91 : "192.168.1.91"
+        h92 : "192.168.1.92"
+        h93 : "192.168.1.93"
+        h94 : "192.168.1.94"
+        h95 : "192.168.1.95"
+        h96 : "192.168.1.96"
+
+worker_node4:
+  hostname: 10.10.10.8
+  username: "server4"
+  password: "nslab123"
+  port: 22
+  groups:
+    - worker_node_servers
+  data:
+    worker_node_server: "http://10.10.10.8:8000"
+    retries: 10  # retry attempts for transient failures
+    backoff_min_ms: 250.0  # minimum backoff time in milliseconds between
+    backoff_max_ms: 500.0  # maximum backoff time in milliseconds between
+    thread_count: 500  # max concurrent threads for handling requests
+    on_site_hosts:
+        h97 : "192.168.1.97"
+        h98 : "192.168.1.98"
+        h99 : "192.168.1.99"
+        h100 : "192.168.1.100"
+        h101 : "192.168.1.101"
+        h102 : "192.168.1.102"
+        h103 : "192.168.1.103"
+        h104 : "192.168.1.104"
+        h105 : "192.168.1.105"
+        h106 : "192.168.1.106"
+        h107 : "192.168.1.107"
+        h108 : "192.168.1.108"
+        h109 : "192.168.1.109"
+        h110 : "192.168.1.110"
+        h111 : "192.168.1.111"
+        h112 : "192.168.1.112"
+        h113 : "192.168.1.113"
+        h114 : "192.168.1.114"
+        h115 : "192.168.1.115"
+        h116 : "192.168.1.116"
+        h117 : "192.168.1.117"
+        h118 : "192.168.1.118"
+        h119 : "192.168.1.119"
+        h120 : "192.168.1.120"
+        h121 : "192.168.1.121"
+        h122 : "192.168.1.122"
+        h123 : "192.168.1.123"
+        h124 : "192.168.1.124"
+        h125 : "192.168.1.125"
+        h126 : "192.168.1.126"
+        h127 : "192.168.1.127"
+        h128 : "192.168.1.128"
