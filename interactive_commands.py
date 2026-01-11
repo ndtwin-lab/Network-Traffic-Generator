@@ -268,9 +268,15 @@ def link_relationship_init(ndtwin_server=None):
 
     logger.info("Waiting to compute all link relationships...")
     try:
-        CONNECTIONS,HOSTS = distance_partition(ndtwin_server=ndtwin_server)
-        logger.info("Link relationships computed successfully.")
-        logger.debug(f"Connection relationships: {HOSTS}")
+        while True:
+            CONNECTIONS,HOSTS = distance_partition(ndtwin_server=ndtwin_server)
+            if CONNECTIONS is False and HOSTS is False:
+                logger.warning("Failed to get link relationships, retrying...")
+                time.sleep(2)
+            else:
+                logger.info("Link relationships computed successfully.")
+                logger.debug(f"Connection relationships: {HOSTS}")
+                break
     except Exception as e:
         logger.warning(e)
         # === You can customize default connections here ===

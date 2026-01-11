@@ -3,7 +3,7 @@
 inventory:
   plugin: SimpleInventory
   options:
-    host_file: "./setting/Hardware.yaml"
+    host_file: "./setting/Mininet.yaml"
     group_file: "./setting/API_server_startup.yaml"
 
 runner:
