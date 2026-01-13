@@ -4,7 +4,7 @@
     {
       "interval_duration(d/h/m/s)": "3s",
       "varied_traffic": {
-        "flow_arrival_rate(flow/sec)": 10,
+        "flow_arrival_rate(flow/sec)": 5,
         "flow_distance_probability": {
           "near": 0.0,
           "middle": 0.5,
@@ -97,7 +97,7 @@
     {
       "interval_duration(d/h/m/s)": "10s",
       "fixed_traffic": {
-        "fixed_flow_number": 10,
+        "fixed_flow_number": 5,
         "flow_distance_probability": {
           "near": 0.0,
           "middle": 0.5,
@@ -116,7 +116,7 @@
     {
       "interval_duration(d/h/m/s)": "4s",
       "varied_traffic": {
-        "flow_arrival_rate(flow/sec)": 5,
+        "flow_arrival_rate(flow/sec)": 3,
         "flow_distance_probability": {
           "near": 0.0,
           "middle": 0.5,

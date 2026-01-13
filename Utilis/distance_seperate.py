@@ -93,20 +93,6 @@ def distance_partition(hosts = None, ndtwin_server=None):
             unique_paths.setdefault(switch_count, []).append((client, server))
     else:
         raise ConnectionError("NDTwin Server not up...")
-
-    # get paths of host pair
-    for client in hosts:
-        for server in hosts:
-            if client != server:
-                cmd = GET_PATHS+"?src_ip="+client['ip']+"&dst_ip="+server['ip']
-                response = requests.get(cmd)
-                if response.status_code == 200:
-                    response = json.loads(response.text)
-                    path = response["switch_count"]
-                    unique_paths.setdefault(path, []).append((client, server))
-                else:
-                    raise ConnectionError("NDTwin Server not up...")
-                
     
     # partition the paths
 

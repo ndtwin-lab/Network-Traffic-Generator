@@ -85,7 +85,7 @@ class SenderReqs(BaseModel):
 class ReceiverReqs(BaseModel):
     reqs: List[ReceiverReq] = Field(default_factory=list)
 
-# TODO : complete sleep_time
+
 class MininetCommunicator(Communicator):
     def __init__(self,sleep_time: Dict[str,float],logger,on_flow_finished: Optional[Callable[[int], Awaitable[None]]] = None):
         super().__init__("Mininet")
@@ -178,6 +178,8 @@ class MininetCommunicator(Communicator):
             if self.on_flow_finished:
                 await self.on_flow_finished(1)
 
+            self.logger.debug(f"Completed {iperf} between {src} and {dst} on port {port}")
+
         except Exception as exc:
             self.logger.warning(f"Error starting {iperf} between {src} and {dst}: {exc}")
 
@@ -263,7 +265,7 @@ class MininetCommunicator(Communicator):
         try:
             dst_host = net.get(dst)
 
-            self.logger.trace(f"Starting fixed {iperf} server on {dst}:{port}...")
+            self.logger.debug(f"Starting fixed {iperf} server on {dst}:{port}...")
             out_file_s = ""
             out_file_c = ""
 
@@ -296,7 +298,8 @@ class MininetCommunicator(Communicator):
 
             if self.on_flow_finished:
                 await self.on_flow_finished(1)
-
+            self.logger.debug(f"Completed {iperf} between {src} and {dst} on port {port}")
+            
         except Exception as exc:
             self.logger.warning(f"Error starting fixed {iperf} between {src} and {dst}: {exc}")
 
@@ -479,9 +482,6 @@ class HostClient:
     async def close(self):
         self.session.close()
 
-#TODO implement port recycling and terminate cleanup process
-#TODO unfinished
-# TODO : Add & complete sleep_time
 class APICommunicator(Communicator):
     
     API = list()
@@ -510,8 +510,7 @@ class APICommunicator(Communicator):
         self.available_ports = {
             host: asyncio.Queue() for host in self.HOSTS_NAME_MAP.keys()
         }
-        #TODO : add to config
-        #TODO : number of threads to use for API server.
+
         exclude_ports = ports_limitation.get("exclude_ports", [8000])
         self.max_port = ports_limitation.get("max_port", 16205)
         self.min_port = ports_limitation.get("min_port", 5204)
