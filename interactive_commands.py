@@ -21,14 +21,8 @@ NDTwin core contributors (as of January 15, 2026):
     Mr. Zhen-Rong Wu <National Taiwan Normal University>
     Mr. Ting-En Chang <University of Wisconsin, Milwaukee>
     Mr. Yu-Cheng Chen <National Yang Ming Chiao Tung University>
-
-Interactive Commands Module for Mininet Network Management
-
-This module provides an asynchronous command-line interface for managing
-Mininet networks, including dynamic traffic generation, host management,
-and network testing capabilities built on top of Python's ``asyncio``
-event loop.
-
+    
+This module provides an asynchronous command-line interface for generate traffics,
 """
 import time
 from datetime import datetime
@@ -63,6 +57,20 @@ from prompt_toolkit.patch_stdout import patch_stdout
 
 # == logger config ==
 def logger_config(level:str="DEBUG"):
+    """
+    Configure the loguru logger with custom formatting and log level.
+    
+    This function removes the default logger handler and adds a new handler
+    that outputs to stdout with timestamp, colored level, and diagnostic information.
+    
+    Args:
+        level (str): The minimum log level to display. Valid values include
+                     "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL".
+                     Defaults to "DEBUG".
+    
+    Returns:
+        None
+    """
     logger.remove(0)
     logger.add(
         sys.stdout,
@@ -75,7 +83,26 @@ def logger_config(level:str="DEBUG"):
 # == prompt autocomplete setting ==
 
 class ConcateCompleter(Completer):
+    """
+    A custom auto-completer that combines nested command completion with path completion.
+    
+    This completer provides contextual auto-completion for the NTG command prompt.
+    It switches between command completion (for 'dist', 'flow', 'exit' commands)
+    and file path completion (when '--config' argument is detected).
+    
+    Attributes:
+        path_completer (PathCompleter): Completer for file system paths.
+        completer (NestedCompleter): Completer for nested command structure.
+        config_start_position (int): Tracks the position after '--config' for path completion.
+    """
+    
     def __init__(self):
+        """
+        Initialize the ConcateCompleter with path and nested command completers.
+        
+        Sets up the command structure for 'dist', 'flow', and 'exit' commands,
+        and initializes the path completer for config file selection.
+        """
         self.path_completer = PathCompleter()
         self.completer =  NestedCompleter.from_nested_dict({
             "dist": {"--config":None},
@@ -86,6 +113,19 @@ class ConcateCompleter(Completer):
         
 
     def get_completions(self, document, complete_event):
+        """
+        Generate completions based on the current document context.
+        
+        This method determines whether to provide path completions or command
+        completions based on whether '--config' is present in the input.
+        
+        Args:
+            document (Document): The current document containing user input text.
+            complete_event: The completion event triggered by the prompt toolkit.
+        
+        Yields:
+            Completion: Completion suggestions appropriate for the current context.
+        """
         if ("--config" in document.text):
             if self.config_start_position == -1:
                 self.config_start_position = document.text.find("--config") + len("--config") + 1
@@ -109,6 +149,20 @@ CMD_LOCK = asyncio.Lock()
 RECYCLE_STOP_EVENT = asyncio.Event()
 
 async def _on_flow_finished(t) -> None:
+    """
+    Callback function invoked when a flow (iperf connection) has finished.
+    
+    This async function safely decrements the global RUNNING counter to track
+    the number of active flows. It uses a lock to ensure thread-safe updates
+    to the shared counter.
+    
+    Args:
+        t (int): The number of flows that have completed. Typically 1 for a
+                 single flow completion.
+    
+    Returns:
+        None
+    """
     global RUNNING
     async with LOCK:
         logger.debug(f"Flow finished, current: {RUNNING} decreasing running count by {t}")
@@ -163,6 +217,24 @@ DEFAULT_FLOW_PARAMETERS = {
 }
 
 def get_hardware_server_info(filtered_nornir:Nornir) -> Optional[Dict[str,Any]]:
+    """
+    Retrieve hardware server information from worker nodes using Nornir.
+    
+    This function collects API server addresses and host-to-IP mappings from
+    all worker node servers configured in the Nornir inventory. It also
+    executes startup commands on each host via SSH.
+    
+    Args:
+        filtered_nornir (Nornir): A Nornir instance filtered to include only
+                                  worker node servers from the inventory.
+    
+    Returns:
+        Optional[Dict[str, Any]]: A dictionary containing:
+            - 'api_servers' (List[str]): List of API server addresses.
+            - 'hosts_name_map' (Dict[str, Dict]): Mapping of host names to
+              their IP addresses and associated API servers.
+            Returns None if no API servers or host mappings are found.
+    """
     api = set()
     hosts_name_map = {}
 
@@ -188,19 +260,37 @@ def get_hardware_server_info(filtered_nornir:Nornir) -> Optional[Dict[str,Any]]:
 
 def interactive_command_mode(net,config_file_path:str="NTG.yaml"):
     """
-    Interactive command processor for Mininet network management.
+    Entry point for the interactive command-line interface for network traffic generation.
     
-    This function provides a custom command-line interface that allows users to:
-    - Create network links between hosts using iperf3
-    - Manage host processes and xterm windows
-    - Control network traffic generation
-    - Gracefully exit and cleanup resources
+    This function initializes the NTG (Network Traffic Generator) system based on the
+    configuration file and sets up the appropriate communication interface (Mininet or
+    Hardware testbed). It handles both CLI mode and custom command mode for Mininet,
+    and API-based communication for hardware testbeds.
+    
+    The function performs the following:
+    1. Loads the NTG configuration from YAML file using Nornir.
+    2. Determines the testbed type (Mininet or Hardware).
+    3. Initializes the appropriate communicator (MininetCommunicator or APICommunicator).
+    4. Computes link relationships between hosts.
+    5. Starts the async command processing loop.
     
     Args:
-        net (Mininet): The Mininet network instance to manage
+        net (Mininet): The Mininet network instance to manage. Can be None for
+                       hardware testbed mode.
+        config_file_path (str): Path to the NTG YAML configuration file.
+                                Defaults to "NTG.yaml".
     
-    Available Commands:
-        exit: Quit the interactive mode and cleanup
+    Returns:
+        None
+    
+    Raises:
+        ValueError: If the NTG configuration is invalid or hardware server
+                    information cannot be retrieved.
+    
+    Available Commands (in custom command mode):
+        flow --config <file>: Start dynamic traffic generation from JSON config.
+        dist --config <file>: Start distribution-based traffic generation.
+        exit: Quit the interactive mode and cleanup resources.
     """
     # == Interactive CLI or Custom Command Mode ==
     # After the setup, we can either enter the Mininet CLI for interactive commands,
@@ -264,6 +354,31 @@ def interactive_command_mode(net,config_file_path:str="NTG.yaml"):
         return
 
 def link_relationship_init(ndtwin_server=None):
+    """
+    Initialize the link relationship data structure by computing distance partitions.
+    
+    This function populates the global CONNECTIONS and HOSTS dictionaries by
+    querying the NDTwin server for network topology information. If the server
+    is unavailable or an error occurs, it falls back to default connection mappings.
+    
+    The CONNECTIONS dictionary categorizes host pairs by their network distance:
+    - 'near': Hosts that are topologically close.
+    - 'middle': Hosts at medium distance.
+    - 'far': Hosts that are topologically distant.
+    
+    Args:
+        ndtwin_server (str, optional): URL or address of the NDTwin server for
+                                       topology information. If None, default
+                                       connections are used.
+    
+    Returns:
+        None
+    
+    Side Effects:
+        - Updates global CONNECTIONS dictionary with source-destination pairs.
+        - Updates global HOSTS dictionary with host information.
+        - Reseeds the random number generator.
+    """
     global CONNECTIONS,HOSTS,CMD_LOCK
 
     logger.info("Waiting to compute all link relationships...")
@@ -291,12 +406,29 @@ def link_relationship_init(ndtwin_server=None):
 
 async def _run_custom_command_loop(net):
     """
-    Internal function that runs the custom command processing loop.
+    Asynchronous command processing loop for handling user input.
     
-    內部函式，運行自定義命令處理迴圈。
+    This function provides an interactive prompt that accepts and processes
+    user commands for network traffic generation. It uses prompt_toolkit for
+    enhanced command-line features including history and auto-completion.
+    
+    Supported commands:
+        - 'flow --config <file>': Execute flow-based traffic generation using
+          a JSON configuration file that defines traffic intervals and parameters.
+        - 'dist --config <file>': Execute distribution-based traffic generation
+          using probability distributions from CSV files.
+        - 'exit': Gracefully terminate the session and cleanup resources.
     
     Args:
-        net (Mininet): The Mininet network instance
+        net (Mininet): The Mininet network instance for executing commands.
+                       Can be None when using hardware testbed mode.
+    
+    Returns:
+        None
+    
+    Raises:
+        KeyboardInterrupt: Caught internally to trigger graceful exit.
+        OSError: Raised if experiment directory creation fails.
     """
     global FLOW_DIR
     session = PromptSession(history=InMemoryHistory(), completer=ConcateCompleter())
@@ -338,6 +470,31 @@ async def _run_custom_command_loop(net):
 
 
 async def ending_process(net):
+    """
+    Handle the graceful termination of a traffic generation experiment.
+    
+    This function waits for all finite-duration flows to complete before
+    cleaning up resources. It monitors the RUNNING counter and only proceeds
+    when all flows except unlimited-duration ones have finished.
+    
+    The function performs the following steps:
+    1. Waits until RUNNING equals UNLIMITED_FLOW (all finite flows completed).
+    2. Logs experiment completion.
+    3. Calls cleanup handler to release resources.
+    4. Resets global state variables for the next experiment.
+    
+    Args:
+        net (Mininet): The Mininet network instance. Used for cleanup operations.
+                       Can be None when using hardware testbed mode.
+    
+    Returns:
+        None
+    
+    Side Effects:
+        - Resets IPERF to "iperf3".
+        - Resets RUNNING to 0.
+        - Resets UNLIMITED_FLOW to 0.
+    """
     global IPERF, RECYCLE_STOP_EVENT, RUNNING, UNLIMITED_FLOW, INTERFACE
     
     async with LOCK:
@@ -361,9 +518,36 @@ async def ending_process(net):
 
 def probability_assignment(current_traffic_config,is_dynamic=True,type_to_parameter=False):
     """
-
-    Calculate probabilitys for distance and type
-
+    Calculate and assign flow types and distances based on probability distributions.
+    
+    This function uses weighted random sampling to assign each flow a distance
+    category (near/middle/far) and a traffic type (combinations of TCP/UDP,
+    limited/unlimited size, rate, and duration). The assignments follow the
+    probability distributions specified in the traffic configuration.
+    
+    Args:
+        current_traffic_config (Dict[str, Any]): Traffic configuration dictionary
+            containing:
+            - 'flow_distance_probability': Dict mapping distance names to probabilities.
+            - 'flow_type_probability': Dict mapping type names to probabilities.
+            - 'flow_arrival_rate(flow/sec)': Number of flows per second (dynamic mode).
+            - 'fixed_flow_number': Total number of flows (static mode).
+            - 'flow_parameters': Dict mapping type names to parameter configurations.
+        is_dynamic (bool): If True, uses 'flow_arrival_rate' for flow count.
+                          If False, uses 'fixed_flow_number'. Defaults to True.
+        type_to_parameter (bool): If True, converts type names to iperf parameter
+                                  lists in the output. Defaults to False.
+    
+    Returns:
+        tuple: Depending on type_to_parameter:
+            - If True: (distance_assignment, type_assignment) where type_assignment
+              contains iperf parameter lists.
+            - If False: (distance_assignment, type_assignment, flow_parameters)
+              where type_assignment contains type names.
+    
+    Side Effects:
+        Updates global UNLIMITED_FLOW counter when unlimited duration flows
+        are assigned.
     """
     # get distance and type probability and flow amounts.
     current_distance_probability = current_traffic_config.get('flow_distance_probability', DEFAULT_DISTANCE_PROBABILITY)
@@ -406,6 +590,39 @@ def probability_assignment(current_traffic_config,is_dynamic=True,type_to_parame
 
 #TODO the config file is chaned, need to update the function
 async def _handle_flow_command(net, args):
+    """
+    Handle the 'flow' command to execute traffic generation from a JSON configuration.
+    
+    This function processes the flow configuration file and generates network traffic
+    according to the specified intervals, probabilities, and parameters. It supports
+    both dynamic (per-second arrival rate) and fixed (one-time batch) traffic patterns.
+    
+    The configuration file should define time intervals with:
+    - varied_traffic: Dynamic traffic with per-second flow arrival rates.
+    - fixed_traffic: Static traffic that starts at interval beginning.
+    - Flow type probabilities (TCP/UDP, size, rate, duration combinations).
+    - Distance probabilities (near/middle/far host selection).
+    
+    Args:
+        net (Mininet): The Mininet network instance for command execution.
+                       Can be None when using hardware testbed mode.
+        args (List[str]): Command arguments. Must include:
+            - '--config': Flag indicating config file follows.
+            - '<filepath>': Path to JSON configuration file.
+    
+    Returns:
+        None
+    
+    Side Effects:
+        - Resets RUNNING counter to 0.
+        - Creates experiment output directory (Mininet mode).
+        - Updates FILL_WIDTH for log file naming.
+        - Starts port recycling task (API mode).
+    
+    Raises:
+        ValueError: If config file path is missing or file is not JSON.
+        json.JSONDecodeError: If config file contains invalid JSON.
+    """
     global RUNNING, FILL_WIDTH, IPERF,FLOW_DIR
 
     RUNNING = 0
@@ -652,7 +869,40 @@ async def _handle_flow_command(net, args):
 #TODO : fix the logger.
 async def _handle_dist_command(net, args):
     """
-    Handle the 'dist' command to manage distribution of flows.
+    Handle the 'dist' command to execute distribution-based traffic generation.
+    
+    This function generates network traffic using probability distributions loaded
+    from CSV files for flow size, duration (lifespan), and sending rate. Unlike
+    the 'flow' command which uses predefined parameter values, this command samples
+    parameters from empirical distributions.
+    
+    The configuration file should specify:
+    - flow_size_csv: Path to CSV with flow size distribution (bin_midpoint, probability).
+    - flow_duration_csv: Path to CSV with duration distribution.
+    - flow_sending_rate_csv: Path to CSV with sending rate distribution.
+    - Time intervals with varied_traffic and/or fixed_traffic configurations.
+    
+    Args:
+        net (Mininet): The Mininet network instance for command execution.
+                       Can be None when using hardware testbed mode.
+        args (List[str]): Command arguments. Must include:
+            - '--config': Flag indicating config file follows.
+            - '<filepath>': Path to JSON configuration file.
+    
+    Returns:
+        None
+    
+    Side Effects:
+        - Resets RUNNING counter to 0.
+        - Creates experiment output directory (Mininet mode).
+        - Updates FILL_WIDTH for log file naming.
+        - Starts port recycling task (API mode).
+        - Loads and caches probability distributions from CSV files.
+    
+    Raises:
+        ValueError: If config file path is missing or file format is invalid.
+        json.JSONDecodeError: If config file contains invalid JSON.
+        Exception: If CSV files cannot be read.
     """
     global RUNNING, FILL_WIDTH, IPERF
 
@@ -966,12 +1216,36 @@ async def _handle_dist_command(net, args):
         await _handle_exit_command("Experiment", leave=True)
 
 async def _handle_exit_command(type="CLI", show_msg: bool = True, leave: Optional[bool] = False):
+    """
+    Handle the exit command to gracefully terminate the session and cleanup resources.
+    
+    This function performs cleanup operations when exiting the NTG system, including
+    stopping running processes, releasing ports, and optionally shutting down worker
+    nodes. It can be called from various contexts (CLI exit, experiment completion,
+    keyboard interrupt).
+    
+    Args:
+        type (str): The context from which exit is called. Used in log messages.
+                    Examples: "CLI", "Experiment". Defaults to "CLI".
+        show_msg (bool): If True, displays exit log message. Set to False when
+                         called from ending_process to avoid duplicate messages.
+                         Defaults to True.
+        leave (bool, optional): If True, executes shutdown commands on worker
+                                nodes via SSH (mode=2). Use True for full system
+                                shutdown, False for experiment reset only.
+                                Defaults to False.
+    
+    Returns:
+        None
+    
+    Side Effects:
+        - Calls INTERFACE.cleanup() to stop running iperf processes.
+        - Executes worker node shutdown commands if leave=True.
+    """
 
     if show_msg:
         logger.warning(f"Exiting {type} and cleaning up...")
 
-    #TODO rewrite below code in MininetCommunicator and APICommunicator
-    #TODO change below code.
     loop = asyncio.get_running_loop()
 
     await INTERFACE.cleanup(loop, leave=leave)

@@ -2,49 +2,13 @@
 
 ![](./document_picture/working.png)
 
-This guide explains how to setup and use commands in our **Network Traffic Generator(NTG)** to generate traffic flows in intervals with specific parameters. In this manual, we demonstrate things as below :
+This guide explains how to use commands in our **Network Traffic Generator(NTG)** to generate traffic flows in intervals with specific parameters. In this manual, we demonstrate things as below :
 
-- [Required environment and libraries for NTG](#required-environment-and-libraries-for-ntg)
 - [NTG configuration](#network-traffic-generator-configuration)
 - [Flow generation configuration](#flow-command-configuration)
 - [Support commands in NTG](#support-commands-in-ntg)
 - [How to use NTG in Mininet](#how-to-use-ntg-in-mininet)
 - [How to use NTG in Hardware Testbed](#how-to-use-ntg-in-hardware)
-
-## Required environment and libraries for NTG
-
-- **Linux** system is needed for all machines.
-- Python 3.8+ recommended.
-
-Install Python + pip:
-
-Ubuntu/Debian:
-
-```bash
-sudo apt update
-sudo apt install -y python3 python3-pip
-python3 --version
-pip3 --version
-```
-
-Libraries used by NTG controller-side scripts (`interactive_commands.py` + `Utilis/*.py`):
-
-- `loguru`
-- `prompt_toolkit`
-- `nornir`, `nornir-utils`
-- `pyyaml`
-- `numpy`, `pandas`
-- `paramiko`
-- `requests`
-
-Install them:
-
-```bash
-pip install --upgrade pip
-pip install loguru prompt_toolkit nornir nornir-utils pyyaml numpy pandas paramiko requests
-```
-
-If your environment uses Conda/virtualenv, activate it before installing packages.
 
 ## Files Overview
 
@@ -366,65 +330,12 @@ However, If you have syntax error or configuration file error, it will show some
 
 - You must have installed `Mininet`, `Ryu`, and `NDTwin`.
 - You must have downloaded `NTG` and move those files and directories into folders with Mininet topology file written in `python`.
+- You must make sure that the topology codes have been changed as [installation manual]()
 - You must modify the `NTG.yaml`'s `host_file` into `./setting/Mininet.yaml ` and parameters in `./setting/Mininet.yaml`.
-
-### Demonstrating Mininet topology
-
-```python
-from mininet.topo import Topo
-from mininet.net import Mininet
-from mininet.cli import CLI
-from mininet.node import RemoteController
-
-class MyTopo(Topo):
-  def build(self):
-    s1 = self.addSwitch("s1")
-    h1 = self.addHost("h1")
-    h2 = self.addHost("h2")
-
-    self.addLink(h1,s1)
-    self.addLink(h2,s1)
-
-if __name__ == "__main__":
-  topo = MyTopo()
-  net = Mininet(
-        topo=topo,
-        controller=RemoteController)
-  net.start()
-  CLI(net)
-```
 
 ### Start Up Process
 
-1. Modify the topology `python` code to import `interactive_commands.py` and replace Mininet's CLI to our NTG's CLI.
-
-```python
-from mininet.topo import Topo
-from mininet.net import Mininet
-#from mininet.cli import CLI
-from mininet.node import RemoteController
-from interactive_commands import interactive_command_mode
-
-class MyTopo(Topo):
-  def build(self):
-    s1 = self.addSwitch("s1")
-    h1 = self.addHost("h1")
-    h2 = self.addHost("h2")
-
-    self.addLink(h1,s1)
-    self.addLink(h2,s1)
-
-if __name__ == "__main__":
-  topo = MyTopo()
-  net = Mininet(
-        topo=topo,
-        controller=RemoteController)
-  net.start()
-  #CLI(net)
-  interactive_command_mode(net)
-```
-
-2. Start the Ryu Controller.
+1. Start the Ryu Controller.
 
 ```bash
 ryu-manager intelligent_router.py ryu.app.rest_topology ryu.app.ofctl_rest --ofp-tcp-listen-port 6633 --observe-link
@@ -432,7 +343,7 @@ ryu-manager intelligent_router.py ryu.app.rest_topology ryu.app.ofctl_rest --ofp
 
 ![ryu](./document_picture/ryu.png)
 
-3. Start the topology.
+2. Start the topology.
 
 ```bash
 sudo python ./topo.py
@@ -440,18 +351,18 @@ sudo python ./topo.py
 
 ![mininet](./document_picture/mininet.png)
 
-4. Since NTG need some topology information from NDTwin, you need to wait for the Ryu Controller to install all flow rules into switches.
+3. Since NTG need some topology information from NDTwin, you need to wait for the Ryu Controller to install all flow rules into switches.
 
 ![mininet1](./document_picture/mininet1.png)
 
-5. Start the NDTwin.
+4. Start the NDTwin.
 
 ```bash
 sudo bin/ndt_main
 ```
 ![ndtwin](./document_picture/ndtwin.png)
 
-6. Now, you can start using NTG
+5. Now, you can start using NTG
 
 ![mininet2](./document_picture/mininet2.png)
 
@@ -462,20 +373,6 @@ sudo bin/ndt_main
 - You must have installed `Ryu`, and `NDTwin`.
 - You must have downloaded `NTG`.
 - You must modify the `NTG.yaml`'s `host_file` into `./setting/Hardware.yaml ` and parameters in `./setting/Hardware.yaml`.
-- For hardware testbed, we use **master and worker** architecture to generate flows. Thus, you need to prepare some machines running in **Linux** and install python libraries as below and move `worker_node.py` into those machines:
-
-  - `fastapi`
-  - `uvicorn` (used to start the API server)
-  - `pydantic`
-  - `loguru`
-  - `orjson` (required by `ORJSONResponse`)
-
-  ```bash
-  pip install --upgrade pip
-  pip install fastapi "uvicorn[standard]" pydantic loguru orjson
-  ```
-
-  Also, you need to make sure NTG can connect to those worker nodes.
 
 ### Start Up Process
 
@@ -497,7 +394,7 @@ sudo bin/ndt_main
 python interactive_commands.py
 ```
 
-4. Manually Start worker node API servers on machines if the worker nodes do not start up correctly.
+4. `Optional:` Manually Start worker node API servers on machines if the worker nodes do not start up correctly.
 
 ```bash
 uvicorn worker_node:app --host 0.0.0.0 --port 8000
