@@ -100,7 +100,7 @@ if __name__ == "__main__":
   **interactive_command_mode(net)**
 ```
 
-After that, you can follow the [NTG User Manual]() to generate flows on Mininet using NTG.
+After that, you can follow the [NTG User Manual](../README.md) to generate flows on Mininet using NTG.
 
 ## NTG for Hardware Testbed
 

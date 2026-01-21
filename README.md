@@ -2,7 +2,7 @@
 
 ![](./document_picture/working.png)
 
-This guide explains how to use commands in our **Network Traffic Generator(NTG)** to generate traffic flows in intervals with specific parameters. In this manual, we demonstrate things as below :
+This guide explains how to use commands in our **Network Traffic Generator(NTG)** to generate traffic flows in intervals with specific parameters. For the installation, you can follow this [links](./installation_guide/README.md). In this manual, we demonstrate things as below :
 
 - [NTG configuration](#network-traffic-generator-configuration)
 - [Flow generation configuration](#flow-command-configuration)
@@ -128,8 +128,6 @@ Mininet_Testbed:
 Notes:
 
 - `mode` can be `cli` (Mininet's CLI) or `custom_command` (our generator's cli)
-- `log_level` sets the logging verbosity. Supported values: `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`.
-- `sleep_time` defines the random waiting interval (in seconds) between starting iperf server and client to avoid "Connection Refused". `min` and `max` set the lower and upper bounds.
 - **When using it, please make sure that Mininet is on you're machine.**
 
 ## Flow Generation Configuration
