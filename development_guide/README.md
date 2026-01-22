@@ -5,7 +5,7 @@
 1. [Introduction](#introduction)
 2. [System Architecture Overview](#system-architecture-overview)
 3. [Core Modules](#core-modules)
-   - [interactive_commands.py](#interactive_commandspy)
+   - [network_traffic_generator.py](#network_traffic_generatorpy)
    - [Utilis Package](#utilis-package)
 4. [Key Design Patterns](#key-design-patterns)
 5. [Developing New Features](#developing-new-features)
@@ -50,7 +50,7 @@ prompt_toolkit   # Interactive CLI
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    interactive_commands.py                      │
+│                    network_traffic_generator.py                 │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────┐  │
 │  │   CLI Loop  │  │  Commands   │  │   Traffic Generation    │  │
 │  │  (asyncio)  │  │  Handlers   │  │      Engine             │  │
@@ -80,7 +80,7 @@ prompt_toolkit   # Interactive CLI
 
 ## Core Modules
 
-### interactive_commands.py
+### network_traffic_generator.py
 
 This is the main entry point of the NTG system. It provides:
 
@@ -102,7 +102,7 @@ This is the main entry point of the NTG system. It provides:
 #### Entry Point Function
 
 ```python
-def interactive_command_mode(net, config_file_path: Optional[str] = "NTG.yaml"):
+def command_line(net, config_file_path: Optional[str] = "NTG.yaml"):
     """
     Main entry point for NTG interactive mode.
     
@@ -198,7 +198,7 @@ Provides utility functions for configuration validation and command execution:
 Provides topology analysis and path distance classification:
 
 ```python
-def distance_partition(hosts=None, ndtwin_server=None):
+def distance_partition(hosts=None, ndtwin_kernel=None):
     """
     Partition host pairs into {near, middle, far} categories
     based on network path length.
@@ -275,7 +275,7 @@ To add a new command to the NTG CLI:
 
 #### Step 1: Add Command to Auto-completer
 
-In `interactive_commands.py`, modify the `ConcateCompleter` class:
+In `network_traffic_generator.py`, modify the `ConcateCompleter` class:
 
 ```python
 class ConcateCompleter(Completer):
@@ -438,12 +438,12 @@ class DockerCommunicator(Communicator):
 
 #### Step 2: Register Communicator in Main Module
 
-In `interactive_commands.py`:
+In `network_traffic_generator.py`:
 
 ```python
 from Utilis.communicator import MininetCommunicator, APICommunicator, DockerCommunicator
 
-def interactive_command_mode(net, config_file_path="NTG.yaml"):
+def command_line(net, config_file_path="NTG.yaml"):
     global INTERFACE
     
     # ... existing code ...
@@ -546,7 +546,7 @@ def check_custom_parameter(traffic: dict, param_name: str) -> Optional[str]:
 | `_create_exp_dir(path)` | command_utils | Create unique experiment directory |
 | `fast_random_choice(arr, weights, size)` | command_utils | Weighted random sampling |
 | `file_checker(data, type)` | command_utils | Validate configuration file |
-| `distance_partition(hosts, server)` | distance_seperate | Classify host pairs by distance |
+| `distance_partition(hosts, kernel)` | distance_seperate | Classify host pairs by distance |
 
 ---
 
@@ -659,7 +659,7 @@ logger.debug(f"Connections: {CONNECTIONS}")
 Enable verbose logging:
 
 ```python
-# In interactive_commands.py
+# In network_traffic_generator.py
 logger.add(
     sys.stdout,
     level="TRACE"  # Most verbose
@@ -699,14 +699,6 @@ if __name__ == "__main__":
 | `unlimited_size_limited_rate_limited_duration_tcp` | `-b`, `-t` | Rate and time limited TCP |
 | `limited_size_limited_rate_tcp` | `-n`, `-b` | Size and rate limited TCP |
 | `*_udp` | Same as TCP + `-u` | UDP variants of above |
-
----
-
-## Version History
-
-| Version | Date | Changes |
-|---------|------|---------|
-| 1.0.0 | 2024 | Initial release |
 
 ---
 

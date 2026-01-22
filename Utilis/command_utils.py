@@ -1,28 +1,7 @@
 """
-Copyright (c) 2025-present
- 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
- 
-  http://www.apache.org/licenses/LICENSE-2.0
+NTG Utilis - Additional Command Utilities.
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-
-NDTwin core contributors (as of January 15, 2026):
-    Prof. Shie-Yuan Wang <National Yang Ming Chiao Tung University; CITI, Academia Sinica> 
-    Ms. Xiang-Ling Lin <CITI, Academia Sinica>
-    Mr. Po-Yu Juan <CITI, Academia Sinica>
-    Mr. Tsu-Li Mou <CITI, Academia Sinica> 
-    Mr. Zhen-Rong Wu <National Taiwan Normal University>
-    Mr. Ting-En Chang <University of Wisconsin, Milwaukee>
-    Mr. Yu-Cheng Chen <National Yang Ming Chiao Tung University>
-
-Some tools for interactive_commands
+Some tools for network_traffic_generator.
 """
 
 import os
@@ -150,8 +129,6 @@ def _process_intervals(interval_list):
     total_configured_time = sum(i['duration_seconds'] for i in processed_intervals)
     
     return processed_intervals, total_configured_time
-
-
 
 def _format_duration(seconds):
     """
@@ -362,9 +339,6 @@ def check_probability_and_parameter(traffic:dict, traffic_type:int,file_type:str
     
     return None
 
-    
-
-
 def file_checker(file_data : dict, file_type: str):
     """
     Check if the required files exist in the given file data dictionary.
@@ -396,7 +370,6 @@ def file_checker(file_data : dict, file_type: str):
                 raise ValueError(f"Invalid traffic configuration at interval {i+1} with error {error}")
 
     return processed_intervals, total_configured_time, file_data.get("traffic_generator(iperf_or_iperf3)", "iperf3")
-    
     
 def get_startup_commands(task: Task) -> list:
     """
@@ -570,8 +543,6 @@ def execute_command(task: Task,mode: int) -> Result:
             'commands': results
         }
     )
-
-
 
 if __name__ == "__main__":
     pass

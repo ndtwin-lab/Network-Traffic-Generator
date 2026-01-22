@@ -1,6 +1,5 @@
 ---
 Mininet_Testbed:
-  hostname: "mininet_testbed"
   data:
     # options: cli(Mininet's cli) or custom_command(Our own cli)
     ndtwin_server: "http://127.0.0.1:8000"

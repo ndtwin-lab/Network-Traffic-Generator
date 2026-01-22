@@ -1,5 +1,5 @@
 """    
-This module provides an asynchronous command-line interface for generate traffics,
+This module provides an asynchronous command-line interface for generate traffics.
 """
 import time
 from datetime import datetime
@@ -235,7 +235,7 @@ def get_hardware_server_info(filtered_nornir:Nornir) -> Optional[Dict[str,Any]]:
     else:
         return None
 
-def interactive_command_mode(net,config_file_path:str="NTG.yaml"):
+def command_line(net,config_file_path:str="NTG.yaml"):
     """
     Entry point for the interactive command-line interface for network traffic generation.
     
@@ -277,7 +277,7 @@ def interactive_command_mode(net,config_file_path:str="NTG.yaml"):
     
 
     NTG_CONFIG = InitNornir(config_file=config_file_path)
-    ndtwin_server = None
+    ndtwin_kernel = None
     try:
         if NTG_CONFIG.inventory.hosts.get("Mininet_Testbed") is not None:
             mininet_testbed = NTG_CONFIG.inventory.hosts["Mininet_Testbed"]
@@ -290,7 +290,7 @@ def interactive_command_mode(net,config_file_path:str="NTG.yaml"):
             elif mininet_mode == "custom_command":
 
                 sleep_time = mininet_testbed.data.get("sleep_time",{"min":0.5,"max":1.5})
-                ndtwin_server = mininet_testbed.data.get("ndtwin_server",None)
+                ndtwin_kernel = mininet_testbed.data.get("ndtwin_kernel",None)
 
                 INTERFACE = MininetCommunicator(sleep_time=sleep_time, 
                                                 logger=logger,
@@ -302,21 +302,21 @@ def interactive_command_mode(net,config_file_path:str="NTG.yaml"):
             hardware_testbed = NTG_CONFIG.inventory.hosts["Hardware_Testbed"]
             logger_config(level=hardware_testbed.data.get("log_level","DEBUG"))
 
-            hardware_server = get_hardware_server_info(NTG_CONFIG.filter(F(groups__contains="worker_node_servers")))
+            worker_node_server = get_hardware_server_info(NTG_CONFIG.filter(F(groups__contains="worker_node_servers")))
             
             recycle_interval = hardware_testbed.data.get("recycle_interval",10)
             sleep_time = hardware_testbed.data.get("sleep_time",{"min":0.5,"max":1.5})
             ports_limitation = hardware_testbed.data.get("ports_limitation",{"min_port":5204,"max_port":16205,"exclude_ports":[8000]})
-            ndtwin_server = hardware_testbed.data.get("ndtwin_server",None)
+            ndtwin_kernel = hardware_testbed.data.get("ndtwin_kernel",None)
 
-            if hardware_server is None:
+            if worker_node_server is None:
                 raise ValueError("Failed to get Hardware server information")
             
             INTERFACE = APICommunicator(sleep_time=sleep_time,
                                         logger=logger,
                                         on_flow_finished=_on_flow_finished,
                                         recycle_stop_event=RECYCLE_STOP_EVENT,
-                                        hardware_server=hardware_server,
+                                        worker_node_server=worker_node_server,
                                         recycle_interval=recycle_interval,
                                         ports_limitation=ports_limitation)
             
@@ -324,13 +324,13 @@ def interactive_command_mode(net,config_file_path:str="NTG.yaml"):
             raise ValueError("Current NTG configuration is invalid. Please check your NTG.yaml file.")
         
         logger.info("Entering Custom Command mode...")
-        link_relationship_init(ndtwin_server=ndtwin_server)
+        link_relationship_init(ndtwin_kernel=ndtwin_kernel)
         asyncio.run(_run_custom_command_loop(net))
 
     except KeyboardInterrupt:
         return
 
-def link_relationship_init(ndtwin_server=None):
+def link_relationship_init(ndtwin_kernel=None):
     """
     Initialize the link relationship data structure by computing distance partitions.
     
@@ -344,7 +344,7 @@ def link_relationship_init(ndtwin_server=None):
     - 'far': Hosts that are topologically distant.
     
     Args:
-        ndtwin_server (str, optional): URL or address of the NDTwin server for
+        ndtwin_kernel (str, optional): URL or address of the NDTwin server for
                                        topology information. If None, default
                                        connections are used.
     
@@ -361,7 +361,7 @@ def link_relationship_init(ndtwin_server=None):
     logger.info("Waiting to compute all link relationships...")
     try:
         while True:
-            CONNECTIONS,HOSTS,error = distance_partition(ndtwin_server=ndtwin_server)
+            CONNECTIONS,HOSTS,error = distance_partition(ndtwin_kernel=ndtwin_kernel)
             if CONNECTIONS is False and HOSTS is False:
                 logger.warning(f"{error}, retrying...")
                 time.sleep(2)
@@ -1236,4 +1236,4 @@ async def _handle_exit_command(type="CLI", show_msg: bool = True, leave: Optiona
     # await loop.run_in_executor(None, gdm.terminate)
 
 if __name__ == "__main__":
-    interactive_command_mode(None,"NTG.yaml")
+    command_line(None,"NTG.yaml")

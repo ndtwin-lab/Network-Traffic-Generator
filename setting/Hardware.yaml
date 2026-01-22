@@ -1,8 +1,7 @@
 ---
 Hardware_Testbed:                
-  hostname: "hardware_testbed"
   data:                  
-    ndtwin_server: "http://10.10.x.x:8000"
+    ndtwin_kernel: "http://10.10.x.x:8000"
     recycle_interval: 10  # in seconds
     sleep_time: # sleep time between flow generation requests
       min: 0.4

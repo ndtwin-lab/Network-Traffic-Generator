@@ -1,26 +1,7 @@
 """
-Copyright (c) 2025-present
- 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
- 
-  http://www.apache.org/licenses/LICENSE-2.0
+NTG Utilis - Communicator Module
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-
-NDTwin core contributors (as of January 15, 2026):
-    Prof. Shie-Yuan Wang <National Yang Ming Chiao Tung University; CITI, Academia Sinica> 
-    Ms. Xiang-Ling Lin <CITI, Academia Sinica>
-    Mr. Po-Yu Juan <CITI, Academia Sinica>
-    Mr. Tsu-Li Mou <CITI, Academia Sinica> 
-    Mr. Zhen-Rong Wu <National Taiwan Normal University>
-    Mr. Ting-En Chang <University of Wisconsin, Milwaukee>
-    Mr. Yu-Cheng Chen <National Yang Ming Chiao Tung University>
+This module defines the Communicator abstract base class and its implementations for Mininet and API-based communication.
 """
 import asyncio
 from abc import ABC, abstractmethod
@@ -489,7 +470,7 @@ class APICommunicator(Communicator):
     HOSTS_NAME_MAP: Dict[str, List[str]] = dict()
 
     def __init__(self,sleep_time: Dict[str,float],logger,on_flow_finished: Optional[Callable[[int], Awaitable[None]]] = None,
-                 recycle_stop_event: Optional[asyncio.Event] = None, hardware_server: Optional[Dict[str, Any]] = None,
+                 recycle_stop_event: Optional[asyncio.Event] = None, worker_node_server: Optional[Dict[str, Any]] = None,
                  recycle_interval:Optional[int] = 10,
                  ports_limitation: Optional[Dict[str, List[int]]] = {"exclude_ports":[8000]}):
         
@@ -500,8 +481,8 @@ class APICommunicator(Communicator):
         self.recycle_stop_event = recycle_stop_event
         self.recycle_port_ended = asyncio.Event()
         
-        self.API = hardware_server.get("api_servers",self.API)
-        self.HOSTS_NAME_MAP = hardware_server.get("hosts_name_map",self.HOSTS_NAME_MAP)
+        self.API = worker_node_server.get("api_servers",self.API)
+        self.HOSTS_NAME_MAP = worker_node_server.get("hosts_name_map",self.HOSTS_NAME_MAP)
 
         self.recycle_interval = recycle_interval
 

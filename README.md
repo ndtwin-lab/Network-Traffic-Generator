@@ -14,7 +14,8 @@ This guide explains how to use commands in our **Network Traffic Generator(NTG)*
 
 ![](./document_picture/files.png)
 
-- `interactive_commands.py`: Interactive CLI that accepts commands.
+- `network_traffic_generator.py`: Interactive CLI that accepts commands.
+- `network_traffic_generator_worker_node.py`: The worker node which receive flow generation requests from controller and manage iperf3 processes.
 - `Utilis/`: Contains some related util functions.
 - `setting/Hardware.yaml`: Nornir host inventory (testbed controller + worker nodes + on-site host IPs).
 - `setting/API_server_startup.yaml`: Nornir group file (startup/shutdown commands for worker-node API servers).
@@ -49,12 +50,12 @@ Notes:
 worker_node_servers:
   data:
     startup_commands:
-      - "source ~/ntg/bin/activate && cd Desktop/NTG && pwd && nohup uvicorn worker_node:app --host 0.0.0.0 --port 8000 > uvi.log 2>&1 &"
+      - "source ~/ntg/bin/activate && cd Desktop/NTG && pwd && nohup uvicorn network_traffic_generator_worker_node:app --host 0.0.0.0 --port 8000 > uvi.log 2>&1 &"
     shutdown_commands:
       - "killall -9 uvicorn"
 ```
 Notes:
-- `startup_commands` should start your FastAPI server (e.g., `uvicorn worker_node:app ...`) on each worker node.
+- `startup_commands` should start your FastAPI server (e.g., `uvicorn network_traffic_generator_worker_node:app ...`) on each worker node.
 - Adjust virtualenv path and ports as needed.
 
 `setting/Hardware.yaml` (abbreviated; tailor to your hosts)
@@ -62,7 +63,7 @@ Notes:
 Hardware_Testbed:
   hostname: "hardware_testbed"
   data:
-    ndtwin_server: "http://10.10.xx.xx:8000"
+    ndtwin_kernel: "http://10.10.xx.xx:8000"
     recycle_interval: 10
     sleep_time:
       min: 0.4
@@ -95,7 +96,7 @@ worker_node1:
 ```
 
 Notes:
-- `ndtwin_server` is the location of our NDTwin controller.
+- `ndtwin_kernel` is the location of our NDTwin controller.
 - `recycle_interval` is the interval for asking whether `worker_node_server` have finished some iperf3 and recycle the used ports.
 - `sleep_time` defines the random waiting interval (in seconds) between starting iperf server and client to avoid "Connection Refused". `min` and `max` set the lower and upper bounds.
 - `ports_limitation` controls the port range used for flow generation:
@@ -104,7 +105,7 @@ Notes:
   - `exclude_ports`: A list of ports to exclude from the available range (e.g., ports used by other services like the API server).
 - `log_level` sets the logging verbosity. Supported values: `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`.
 - `groups` must be a YAML list (e.g., `- worker_node_servers`).
-- `data.worker_node_server` must be reachable from the machine running `interactive_commands.py`.
+- `data.worker_node_server` must be reachable from the machine running `network_traffic_generator.py`.
 - `retries` specifies the number of retry attempts for worker nodes to restart iperf client.
 - `backoff_min_ms` and `backoff_max_ms` define the minimum and maximum backoff time (in milliseconds) between retry attempts.
 - `thread_count` sets the maximum number of concurrent threads for starting iperf client/server on each worker node.
@@ -117,7 +118,7 @@ Notes:
 Mininet_Testbed:
   hostname: "mininet_testbed"
   data:
-    ndtwin_server: "http://127.0.0.1:8000"
+    ndtwin_kernel: "http://127.0.0.1:8000"
     mode: "cli"
     log_level: "DEBUG"
     sleep_time:
@@ -417,13 +418,13 @@ sudo bin/ndt_main
 3. Start the NTG
 
 ```bash
-python interactive_commands.py
+python network_traffic_generator.py
 ```
 
 4. `Optional:` Manually Start worker node API servers on machines if the worker nodes do not start up correctly.
 
 ```bash
-uvicorn worker_node:app --host 0.0.0.0 --port 8000
+uvicorn network_traffic_generator_worker_node:app --host 0.0.0.0 --port 8000
 ```
 
 5. Now, you can use `NTG` to generate flows.
@@ -439,7 +440,7 @@ uvicorn worker_node:app --host 0.0.0.0 --port 8000
 ## Troubleshooting
 
 - If flows do not start: 
-  - Confirm API servers are up, ports opened, and the `interactive_commands.py` process can reach them.
+  - Confirm API servers are up, ports opened, and the `network_traffic_generator.py` process can reach them.
   - It may due to the CPU resources are not enough for you're flow configurations. Please lower the `flow numbers` or parameters to fix the question.
 - If Nornir inventory errors occur: double-check that `groups` is a YAML list and host keys/fields are correctly indented.
 - If `uvicorn` fails to start: verify your virtualenv and ensure `uvicorn` is installed (`pip install uvicorn fastapi`).

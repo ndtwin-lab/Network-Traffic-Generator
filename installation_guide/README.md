@@ -25,7 +25,7 @@ python3 --version
 pip3 --version
 ```
 
-Libraries used by NTG controller-side scripts (`interactive_commands.py` + `Utilis/*.py`):
+Libraries used by NTG controller-side scripts (`network_traffic_generator.py` + `Utilis/*.py`):
 
 - `loguru`
 - `prompt_toolkit`
@@ -72,14 +72,14 @@ if __name__ == "__main__":
   CLI(net)
 ```
 
-You must import `interactive_command_mode.py` and change the `CLI(net)` to `interactive_command_mode(net)` as below:
+You must import `network_traffic_generator.py` and change the `CLI(net)` to `command_line(net)` as below:
 
 ```python
 from mininet.topo import Topo
 from mininet.net import Mininet
 #from mininet.cli import CLI
 from mininet.node import RemoteController
-from interactive_commands import interactive_command_mode
+from network_traffic_generator import command_line
 
 class MyTopo(Topo):
   def build(self):
@@ -97,14 +97,14 @@ if __name__ == "__main__":
         controller=RemoteController)
   net.start()
   #CLI(net)
-  **interactive_command_mode(net)**
+  **command_line(net)**
 ```
 
 After that, you can follow the [NTG User Manual](../README.md) to generate flows on Mininet using NTG.
 
 ## NTG for Hardware Testbed
 
-For hardware testbed, we use **master and worker** architecture to generate flows. Thus, you need to prepare some machines running in **Linux** and install python libraries as below and **move `worker_node.py` into those machines**:
+For hardware testbed, we use **master and worker** architecture to generate flows. Thus, you need to prepare some machines running in **Linux** and install python libraries as below and **move `network_traffic_generator_worker_node.py` into those machines**:
 
 - `fastapi`
 - `uvicorn` (used to start the API server)
