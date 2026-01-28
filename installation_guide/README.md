@@ -42,6 +42,12 @@ pip install --upgrade pip
 pip install loguru prompt_toolkit nornir nornir-utils pyyaml numpy pandas paramiko requests
 ```
 
+Clone our NTG:
+
+```bash
+git clone https://github.com/ndtwin-lab/Network-Traffic-Generator.git
+```
+
 If your environment uses Conda/virtualenv, activate it before installing packages.
 
 ## NTG for Mininet Environment
