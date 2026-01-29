@@ -442,5 +442,6 @@ uvicorn network_traffic_generator_worker_node:app --host 0.0.0.0 --port 8000
 - If flows do not start: 
   - Confirm API servers are up, ports opened, and the `network_traffic_generator.py` process can reach them.
   - It may due to the CPU resources are not enough for you're flow configurations. Please lower the `flow numbers` or parameters to fix the question.
+  - Since every iperf process will open **one file** and the **number of opening file may be limited**, the machine would be unable to run new iperf process when you have generated a huge amount of flows. Thus, you can change the `ulimits -n` or `ulimits -u` to a higher values to solve the problem.
 - If Nornir inventory errors occur: double-check that `groups` is a YAML list and host keys/fields are correctly indented.
 - If `uvicorn` fails to start: verify your virtualenv and ensure `uvicorn` is installed (`pip install uvicorn fastapi`).
