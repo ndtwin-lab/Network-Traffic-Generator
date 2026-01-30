@@ -42,15 +42,15 @@ def get_hosts():
     except Exception:
         return [-1]
 
-def distance_partition(hosts = None, ndtwin_server=None):
+def distance_partition(hosts = None, ndtwin_kernel=None):
     """
     Partition the unique paths array to {near,middle,far} set.
     """
     global GET_PATHS,GET_HOSTS
 
-    if ndtwin_server is not None:
-        GET_PATHS = ndtwin_server+"/ndt/get_path_switch_count"
-        GET_HOSTS = ndtwin_server+"/ndt/get_graph_data"
+    if ndtwin_kernel is not None:
+        GET_PATHS = ndtwin_kernel+"/ndt/get_path_switch_count"
+        GET_HOSTS = ndtwin_kernel+"/ndt/get_graph_data"
 
     if hosts is None:
         hosts = get_hosts()
