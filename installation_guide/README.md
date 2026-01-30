@@ -31,6 +31,7 @@ Libraries used by NTG controller-side scripts (`network_traffic_generator.py` + 
 - `prompt_toolkit`
 - `nornir`, `nornir-utils`
 - `pyyaml`
+- `pydantic`
 - `numpy`, `pandas`
 - `paramiko`
 - `requests`
@@ -39,7 +40,7 @@ Install them:
 
 ```bash
 pip install --upgrade pip
-pip install loguru prompt_toolkit nornir nornir-utils pyyaml numpy pandas paramiko requests
+pip install loguru prompt_toolkit nornir nornir-utils pyyaml numpy pandas paramiko requests pydantic
 ```
 
 Clone our NTG:
