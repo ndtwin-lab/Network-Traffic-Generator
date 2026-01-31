@@ -278,11 +278,13 @@ def command_line(net,config_file_path:str="NTG.yaml"):
 
     NTG_CONFIG = InitNornir(config_file=config_file_path)
     ndtwin_kernel = None
+    log_level = None
     try:
         if NTG_CONFIG.inventory.hosts.get("Mininet_Testbed") is not None:
             mininet_testbed = NTG_CONFIG.inventory.hosts["Mininet_Testbed"]
             mininet_mode = mininet_testbed.data.get("mode","cli")
-            logger_config(level=mininet_testbed.data.get("log_level","DEBUG"))
+            log_level = mininet_testbed.data.get("log_level","DEBUG")
+            logger_config(level=log_level)
             if mininet_mode == "cli":
                 logger.info("Entering Mininet CLI mode...")
                 CLI(net)
@@ -300,7 +302,8 @@ def command_line(net,config_file_path:str="NTG.yaml"):
         if NTG_CONFIG.inventory.hosts.get("Hardware_Testbed") is not None:
 
             hardware_testbed = NTG_CONFIG.inventory.hosts["Hardware_Testbed"]
-            logger_config(level=hardware_testbed.data.get("log_level","DEBUG"))
+            log_level = hardware_testbed.data.get("log_level","DEBUG")
+            logger_config(level=log_level)
 
             worker_node_server = get_hardware_server_info(NTG_CONFIG.filter(F(groups__contains="worker_node_servers")))
             
@@ -322,7 +325,11 @@ def command_line(net,config_file_path:str="NTG.yaml"):
             
         elif INTERFACE is None:
             raise ValueError("Current NTG configuration is invalid. Please check your NTG.yaml file.")
-        
+
+        config_dict = NTG_CONFIG.inventory.dict()
+        logger.debug("Current NTG Configuration:")
+        logger.debug(config_dict)
+
         logger.info("Entering Custom Command mode...")
         link_relationship_init(ndtwin_kernel=ndtwin_kernel)
         asyncio.run(_run_custom_command_loop(net))

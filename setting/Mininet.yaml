@@ -2,7 +2,7 @@
 Mininet_Testbed:
   data:
     # options: cli(Mininet's cli) or custom_command(Our own cli)
-    ndtwin_server: "http://127.0.0.1:8000"
+    ndtwin_kernel: "http://127.0.0.1:8000"
     mode: "custom_command" 
     log_level: "DEBUG"  # TRACE, DEBUG, INFO, WARNING, ERROR
     sleep_time:

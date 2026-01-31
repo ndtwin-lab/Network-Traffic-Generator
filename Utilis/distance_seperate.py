@@ -51,7 +51,7 @@ def distance_partition(hosts = None, ndtwin_kernel=None):
     if ndtwin_kernel is not None:
         GET_PATHS = ndtwin_kernel+"/ndt/get_path_switch_count"
         GET_HOSTS = ndtwin_kernel+"/ndt/get_graph_data"
-
+    
     if hosts is None:
         hosts = get_hosts()
     
