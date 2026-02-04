@@ -705,19 +705,17 @@ class APICommunicator(Communicator):
             wait_offset = random.uniform(*self.sleep_time)
             port_list = []
             rreqs = {}
-            logger.trace(dst_list)
-            logger.trace(parameter_list)
+            self.logger.trace(dst_list)
+            self.logger.trace(parameter_list)
             for dst, parameter in zip(dst_list, parameter_list):
                 port = await self.port_selector(dst)
                 self.logger.trace(f"Starting fixed {iperf} server on {dst}:{port}")
                 port_list.append(port)
 
-                self.logger.trace(f"Starting fixed {iperf} server on {dst}:{port}...")
-
                 t_para = parameter.get('-t',-1)
-
-                is_unlimited_duration = False if (t_para != 0 ) else True
                 
+                is_unlimited_duration = False if (t_para == -1 ) else True
+
                 rreq = ReceiverReq(
                     bind=self.HOSTS_NAME_MAP[dst]['ip'],
                     port=port,
@@ -757,6 +755,10 @@ class APICommunicator(Communicator):
                 if udp == ' ':
                     udp = True
 
+                t_para = int(parameter.get('-t',-1))
+                
+                is_unlimited_duration = False if (t_para == -1 ) else True
+
                 req = SenderReq(
                     c=self.HOSTS_NAME_MAP[dst]['ip'],
                     port=port,
@@ -765,7 +767,7 @@ class APICommunicator(Communicator):
                     cport=None,
                     b=parameter.get('-b',None),
                     n=parameter.get('-n'),
-                    t= (int(parameter.get('-t')) if parameter.get('-t') is not None else None),
+                    t= t_para if t_para != -1 else None,
                     start_time=start_time,
                     fixed_traffic_duration= None if is_unlimited_duration else fixed_traffic_duration,
                     iperf_version=iperf,
