@@ -232,13 +232,12 @@ def _json_text_mentions_eagain(out: Optional[str], err: Optional[str]) -> bool:
     """
     text = (out or "") + "\n" + (err or "")
     markers = (
-        "Resource temporarily unavailable",
         "Connection refused",
     )
     for m in markers:
         if m in text:
             # logger.info(f"get error : {m}")
-            return True
+            return m,True
     # Try parse JSON and check error field if present
     try:
         if out:
@@ -247,10 +246,10 @@ def _json_text_mentions_eagain(out: Optional[str], err: Optional[str]) -> bool:
             if isinstance(errf, str):
                 for m in markers:
                     if m in errf:
-                        return True
+                        return errf,True
     except Exception:
         pass
-    return False
+    return " ",False
 
 def _cmd_has_one_off(cmd: List[str]) -> bool:
     """Check if the iperf server command has the one-off flag (-1 or --one-off).
@@ -304,11 +303,9 @@ def _start_subprocess_and_wait_with_retry(cmd: List[str], job_id: str) -> tuple:
         if rc == 0:
             return rc, out, err
         # Check for EAGAIN signature
-        err_is_eagain = False
-        if _json_text_mentions_eagain(out, err):
-            err_is_eagain = True
+        why,err_is_eagain = _json_text_mentions_eagain(out, err)
         if err_is_eagain:
-            logger.info("failed...")
+            logger.warning(f"[retry] {job_id} failed...{out}")
             if i < attempts - 1:
                 backoff_ms = random.uniform( BACKOFF_MIN_MS,  BACKOFF_MAX_MS)
                 try:
@@ -417,6 +414,8 @@ async def _run_and_capture_json(job_id: str, cmd: List[str], sem: asyncio.Semaph
                         stdout = stdout + stdout_temp
                         stderr = stderr + stderr_temp
                         
+                        #TODO add guard to prevent some connection error:
+                        await asyncio.sleep(0.01)
 
                 elif JOBS[job_id].role == "receiver":
                     logger.info(f"[fixed_traffic_receiver] job={job_id}, cmd={' '.join(cmd)} running for {fixed_traffic_duration + wait_offset} seconds")
@@ -506,7 +505,7 @@ async def start_senders(reqs: SenderReqs):
             cmd += ["-n", req.n]
         if req.t is not None:
             cmd += ["-t", str(req.t)]
-
+            
         job = _new_job("sender", cmd, base)
         RUNNERS[job.job_id] = asyncio.create_task(_run_and_capture_json(job.job_id, cmd, SENDER_SEM, req.fixed_traffic_duration,test_time=test_time))
         return job.job_id

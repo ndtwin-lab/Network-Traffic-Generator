@@ -598,88 +598,140 @@ class APICommunicator(Communicator):
             port_list = []
 
             rreqs = {}
+            try:
+                for dst, parameter in zip(dst_list, parameter_list):
 
-            for _, dst in enumerate(dst_list):
+                    port = await self.port_selector(dst)
+                    port_list.append(port)
 
-                port = await self.port_selector(dst)
-                port_list.append(port)
+                    udp = parameter.get('-u', False)
 
-                self.logger.trace(f"Starting {iperf} server on {dst}:{port}...")
-                
-                rreq = ReceiverReq(
-                    bind=self.HOSTS_NAME_MAP[dst]['ip'],
-                    port=port,
-                    u=False,
-                    one_off=True,
-                    start_time=start_time,
-                    iperf_version=iperf,
-                )
-                rreqs.setdefault(self.HOSTS_NAME_MAP[dst]["api"],ReceiverReqs())
+                    if udp == ' ' and iperf == "iperf":
+                        udp = True
+                    elif udp == ' ' and iperf != "iperf":
+                        udp = False
 
-                rreqs[self.HOSTS_NAME_MAP[dst]["api"]].reqs.append(rreq)
+                    rreq = ReceiverReq(
+                        bind=self.HOSTS_NAME_MAP[dst]['ip'],
+                        port=port,
+                        u=udp,
+                        one_off=True,
+                        start_time=start_time,
+                        iperf_version=iperf,
+                    )
+                    rreqs.setdefault(self.HOSTS_NAME_MAP[dst]["api"],ReceiverReqs())
+
+                    rreqs[self.HOSTS_NAME_MAP[dst]["api"]].reqs.append(rreq)
+            except Exception as exc:
+                self.logger.warning(f"Error preparing receiver requests: {exc}")
+                for dst, port in zip(dst_list, port_list):
+                    self.available_ports[dst].put_nowait(port)
+                await self.on_flow_finished(len(dst_list))
+                return
 
             api_rjobs = {}
-            for api, rreq in rreqs.items():
+            try:
+                for api, rreq in rreqs.items():
 
-                rjobs, status = await self.client.start_receiver(
-                    api, 
-                    rreq
-                )
+                    rjobs, status = await self.client.start_receiver(
+                        api, 
+                        rreq
+                    )
 
-                api_rjobs[api] = rjobs
+                    api_rjobs[api] = rjobs
 
-                if not rjobs:
-                    self.logger.warning(f"Failed to start receiver on {api}, status: {status}")
-                    for dst, port in zip(dst_list, port_list):
-                        self.available_ports[dst].put_nowait(port)
-                    await self.on_flow_finished(len(dst_list))
-                    return
-                
+                    if not rjobs:
+                        self.logger.warning(f"Failed to start receiver on {api}, status: {status}")
+                        for dst, port in zip(dst_list, port_list):
+                            self.available_ports[dst].put_nowait(port)
+                        await self.on_flow_finished(len(dst_list))
+                        return
+
+                    self.logger.debug(f"Starting {iperf} servers on {api} success...")
+                    for req in rreq.reqs:
+                        self.logger.trace(f"Started {iperf} server on {api} for {req.bind}:{req.port}...")
+
+            except Exception as exc:
+                self.logger.warning(f"Error starting receiver: {exc}")
+                for api, rjobs in api_rjobs.items():
+                    for rjob in rjobs:
+                        self.client.stop_flow(api, rjob)
+                for dst, port in zip(dst_list, port_list):
+                    self.available_ports[dst].put_nowait(port)
+                await self.on_flow_finished(len(dst_list))
+                return
+            
             await asyncio.sleep(random.uniform(*self.sleep_time))
 
-            sreq = {}
+            sreqs = {}
             
-            for src,dst,port,parameter in zip(src_list,dst_list,port_list,parameter_list):
+            try:
+                for src,dst,port,parameter in zip(src_list,dst_list,port_list,parameter_list):
 
-                udp = parameter.get('-u', False)
-                if udp == ' ':
-                    udp = True
+                    udp = parameter.get('-u', False)
+                    if udp == ' ':
+                        udp = True
 
-                req = SenderReq(
-                    c=self.HOSTS_NAME_MAP[dst]['ip'],
-                    port=port,
-                    u=udp,
-                    B=self.HOSTS_NAME_MAP[src]['ip'],
-                    cport=None,
-                    b=parameter.get('-b',None),
-                    n=parameter.get('-n'),
-                    t= (int(parameter.get('-t')) if parameter.get('-t') is not None else None),
-                    start_time=start_time,
-                    iperf_version=iperf,
-                )
+                    req = SenderReq(
+                        c=self.HOSTS_NAME_MAP[dst]['ip'],
+                        port=port,
+                        u=udp,
+                        B=self.HOSTS_NAME_MAP[src]['ip'],
+                        cport=None,
+                        b=parameter.get('-b',None),
+                        n=parameter.get('-n'),
+                        t= (int(parameter.get('-t')) if parameter.get('-t') is not None else None),
+                        start_time=start_time,
+                        iperf_version=iperf,
+                    )
 
-                sreq.setdefault(self.HOSTS_NAME_MAP[src]["api"], SenderReqs())
-                sreq[self.HOSTS_NAME_MAP[src]["api"]].reqs.append(req)
+                    sreqs.setdefault(self.HOSTS_NAME_MAP[src]["api"], SenderReqs())
+                    sreqs[self.HOSTS_NAME_MAP[src]["api"]].reqs.append(req)
+            except Exception as exc:
+                self.logger.warning(f"Error preparing sender requests: {exc}")
+                for api, rjobs in api_rjobs.items():
+                    for rjob in rjobs:
+                        self.client.stop_flow(api, rjob)
+                for dst, port in zip(dst_list, port_list):
+                    self.available_ports[dst].put_nowait(port)
+                await self.on_flow_finished(len(src_list)+len(dst_list))
+                return
+            
+            try:
+                for src, sreq in sreqs.items():
+                    sjob, status = await self.client.start_sender(
+                        src, sreq
+                    )
 
-            for src, req in sreq.items():
-                sjob, status = await self.client.start_sender(
-                    src, req
-                )
+                    if not sjob:
+                        self.logger.warning(f"Failed to start sender on {src} -> {dst}:{port}, status: {status}")
+                        # Stop all started receivers
+                        for api, rjobs in api_rjobs.items():
+                            for rjob in rjobs:
+                                self.client.stop_flow(api, rjob)
 
-                if not sjob:
-                    self.logger.warning(f"Failed to start sender on {src} -> {dst}:{port}, status: {status}")
-                    # Stop all started receivers
-                    for api, rjobs in api_rjobs.items():
-                        for rjob in rjobs:
-                            self.client.stop_flow(api, rjob)
-                        
-                    # Recycle ports
-                    for dst, port in zip(dst_list, port_list):
-                        self.available_ports[dst].put_nowait(port)
+                        # Recycle ports
+                        for dst, port in zip(dst_list, port_list):
+                            self.available_ports[dst].put_nowait(port)
 
-                    await self.on_flow_finished(len(src_list)+len(dst_list))
-                    return
+                        await self.on_flow_finished(len(src_list)+len(dst_list))
+                        return
 
+                    self.logger.debug(f"Starting {iperf} client on {api} success...")
+                    for req in sreq.reqs:
+                        self.logger.trace(f"Started {iperf} client on {api} for {req.B}:{req.port}...")
+
+
+            except Exception as exc:
+                self.logger.warning(f"Error starting sender: {exc}")
+                for api, rjobs in api_rjobs.items():
+                    for rjob in rjobs:
+                        self.client.stop_flow(api, rjob)
+                for dst, port in zip(dst_list, port_list):
+                    self.available_ports[dst].put_nowait(port)
+                await self.on_flow_finished(len(src_list)+len(dst_list))
+                return
+            
         except Exception as exc:
             self.logger.warning(f"Error starting {iperf} between {src} and {dst}: {exc}")
 
@@ -698,7 +750,6 @@ class APICommunicator(Communicator):
         cmd_lock: Any,
         port_command: Any,
         start_time: Optional[str] = None,
-        iperf_version: Optional[str] = "iperf3",
     ) -> None:
         try:
             self.logger.trace(f"Starting fixed {iperf} between multiple pairs...")
@@ -707,92 +758,143 @@ class APICommunicator(Communicator):
             rreqs = {}
             self.logger.trace(dst_list)
             self.logger.trace(parameter_list)
-            for dst, parameter in zip(dst_list, parameter_list):
-                port = await self.port_selector(dst)
-                self.logger.trace(f"Starting fixed {iperf} server on {dst}:{port}")
-                port_list.append(port)
+            try:
+                for dst, parameter in zip(dst_list, parameter_list):
+                    port = await self.port_selector(dst)
 
-                t_para = parameter.get('-t',-1)
-                
-                is_unlimited_duration = False if (t_para == -1 ) else True
+                    port_list.append(port)
 
-                rreq = ReceiverReq(
-                    bind=self.HOSTS_NAME_MAP[dst]['ip'],
-                    port=port,
-                    u=False,
-                    one_off=False if t_para == -1 else True,
-                    start_time=start_time,
-                    fixed_traffic_duration= None if is_unlimited_duration else fixed_traffic_duration,
-                    wait_offset=(wait_offset+10.0), # add extra wait time for ensure receiver started before sender
-                    iperf_version=iperf,
-                )
-                rreqs.setdefault(self.HOSTS_NAME_MAP[dst]["api"],ReceiverReqs())
-                rreqs[self.HOSTS_NAME_MAP[dst]["api"]].reqs.append(rreq)
+                    t_para = parameter.get('-t',-1)
 
+                    is_unlimited_duration = False if (t_para == -1 ) else True
+
+                    udp = parameter.get('-u', False)
+
+                    if udp == ' ' and iperf == "iperf":
+                        udp = True
+                    elif udp == ' ' and iperf != "iperf":
+                        udp = False
+
+                    rreq = ReceiverReq(
+                        bind=self.HOSTS_NAME_MAP[dst]['ip'],
+                        port=port,
+                        u=udp,
+                        one_off=False if t_para == -1 else True,
+                        start_time=start_time,
+                        fixed_traffic_duration= None if is_unlimited_duration else fixed_traffic_duration,
+                        wait_offset=(wait_offset+10.0), # add extra wait time for ensure receiver started before sender
+                        iperf_version=iperf,
+                    )
+                    rreqs.setdefault(self.HOSTS_NAME_MAP[dst]["api"],ReceiverReqs())
+                    rreqs[self.HOSTS_NAME_MAP[dst]["api"]].reqs.append(rreq)
+            except Exception as exc:
+                self.logger.warning(f"Error preparing server requests: {exc}")
+                for dst, port in zip(dst_list, port_list):
+                    self.available_ports[dst].put_nowait(port)
+                await self.on_flow_finished(len(dst_list))
+                return
+            
             api_rjobs = {}
-            for api, rreq in rreqs.items():
+            try:
+                for api, rreq in rreqs.items():
 
-                rjobs, status = await self.client.start_receiver(
-                    api, 
-                    rreq
-                )
-                api_rjobs[api] = rjobs
+                    rjobs, status = await self.client.start_receiver(
+                        api, 
+                        rreq
+                    )
+                    api_rjobs[api] = rjobs
 
-                if not rjobs:
-                    self.logger.warning(f"Failed to start receiver on {api}, status: {status}")
-                    for dst, port in zip(dst_list, port_list):
-                        self.available_ports[dst].put_nowait(port)
-                    await self.on_flow_finished(len(dst_list))
-                    return
-                
+                    if not rjobs:
+                        self.logger.warning(f"Failed to start server on {api}, status: {status}")
+                        for dst, port in zip(dst_list, port_list):
+                            self.available_ports[dst].put_nowait(port)
+                        await self.on_flow_finished(len(dst_list))
+                        return
+
+                    self.logger.debug(f"Starting {iperf} servers on {api} success...")
+                    for req in rreq.reqs:
+                        self.logger.trace(f"Started {iperf} server on {api} for {req.bind}:{req.port}...")
+            except Exception as exc:
+                self.logger.warning(f"Error starting server: {exc}")
+                for api, rjobs in api_rjobs.items():
+                    for rjob in rjobs:
+                        self.client.stop_flow(api, rjob)
+                for dst, port in zip(dst_list, port_list):
+                    self.available_ports[dst].put_nowait(port)
+                await self.on_flow_finished(len(dst_list))
+                return
+
             await asyncio.sleep(wait_offset)
 
-            sreq = {}
+            sreqs = {}
+            try:
+                for src,dst,port,parameter in zip(src_list,dst_list,port_list,parameter_list):
 
-            for src,dst,port,parameter in zip(src_list,dst_list,port_list,parameter_list):
+                    udp = parameter.get('-u', False)
+                    if udp == ' ':
+                        udp = True
 
-                udp = parameter.get('-u', False)
-                if udp == ' ':
-                    udp = True
+                    t_para = int(parameter.get('-t',-1))
 
-                t_para = int(parameter.get('-t',-1))
-                
-                is_unlimited_duration = False if (t_para == -1 ) else True
+                    is_unlimited_duration = False if (t_para == -1 ) else True
 
-                req = SenderReq(
-                    c=self.HOSTS_NAME_MAP[dst]['ip'],
-                    port=port,
-                    u=udp,
-                    B=self.HOSTS_NAME_MAP[src]['ip'],
-                    cport=None,
-                    b=parameter.get('-b',None),
-                    n=parameter.get('-n'),
-                    t= t_para if t_para != -1 else None,
-                    start_time=start_time,
-                    fixed_traffic_duration= None if is_unlimited_duration else fixed_traffic_duration,
-                    iperf_version=iperf,
-                )
-                sreq.setdefault(self.HOSTS_NAME_MAP[src]["api"], SenderReqs())
-                sreq[self.HOSTS_NAME_MAP[src]["api"]].reqs.append(req)
-                
-            for src, req in sreq.items():
-                sjob, status = await self.client.start_sender(
-                    src, req
-                )
-                if not sjob:
-                    self.logger.warning(f"Failed to start fixed sender on {src} -> {dst}:{port}, status: {status}")
-                    # Stop all started receivers
-                    for api, rjobs in api_rjobs.items():
-                        for rjob in rjobs:
-                            self.client.stop_flow(api, rjob)
+                    req = SenderReq(
+                        c=self.HOSTS_NAME_MAP[dst]['ip'],
+                        port=port,
+                        u=udp,
+                        B=self.HOSTS_NAME_MAP[src]['ip'],
+                        cport=None,
+                        b=parameter.get('-b',None),
+                        n=parameter.get('-n'),
+                        t= t_para if t_para != -1 else None,
+                        start_time=start_time,
+                        fixed_traffic_duration= None if is_unlimited_duration else fixed_traffic_duration,
+                        iperf_version=iperf,
+                    )
+                    sreqs.setdefault(self.HOSTS_NAME_MAP[src]["api"], SenderReqs())
+                    sreqs[self.HOSTS_NAME_MAP[src]["api"]].reqs.append(req)
+            except Exception as exc:
+                self.logger.warning(f"Error preparing client requests: {exc}")
+                for api, rjobs in api_rjobs.items():
+                    for rjob in rjobs:
+                        self.client.stop_flow(api, rjob)
+                for dst, port in zip(dst_list, port_list):
+                    self.available_ports[dst].put_nowait(port)
+                await self.on_flow_finished(len(src_list)+len(dst_list))
+                return
+
+            try:
+                for src, sreq in sreqs.items():
+                    sjob, status = await self.client.start_sender(
+                        src, sreq
+                    )
+                    if not sjob:
+                        self.logger.warning(f"Failed to start client sender on {src} -> {dst}:{port}, status: {status}")
+                        # Stop all started receivers
+                        for api, rjobs in api_rjobs.items():
+                            for rjob in rjobs:
+                                self.client.stop_flow(api, rjob)
+
+                        # Recycle ports
+                        for dst, port in zip(dst_list, port_list):
+                            self.available_ports[dst].put_nowait(port)
+
+                        await self.on_flow_finished(len(src_list)+len(dst_list))
+                        return
+                    self.logger.debug(f"Starting {iperf} client on {api} success...")
+                    for req in sreq.reqs:
+                        self.logger.trace(f"Started {iperf} client on {api} for {req.B}:{req.port}...")
                         
-                    # Recycle ports
-                    for dst, port in zip(dst_list, port_list):
-                        self.available_ports[dst].put_nowait(port)
-
-                    await self.on_flow_finished(len(src_list)+len(dst_list))
-                    return
-                
+            except Exception as exc:
+                self.logger.warning(f"Error starting client: {exc}")
+                for api, rjobs in api_rjobs.items():
+                    for rjob in rjobs:
+                        self.client.stop_flow(api, rjob)
+                for dst, port in zip(dst_list, port_list):
+                    self.available_ports[dst].put_nowait(port)
+                await self.on_flow_finished(len(src_list)+len(dst_list))
+                return
+            
         except Exception as exc:
             self.logger.warning(f"Error starting fixed {iperf} between {src} and {dst}: {exc}")
     
