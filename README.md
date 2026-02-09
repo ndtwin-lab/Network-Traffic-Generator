@@ -184,9 +184,10 @@ Supported flow types for `varied_traffic`:
 Supported flow types for `fixed_traffic` :
 
 - `limited_size_unlimited_rate_tcp`
+- `unlimited_size_limited_rate_limited_duration_tcp`
 - `limited_size_limited_rate_tcp`
 - `unlimited_size_limited_rate_unlimited_duration_udp`
-- `unlimited_size_limited_rate_limited_duration_tcp`
+- `limited_size_limited_rate_udp`
 
 Note: for each section (`varied_traffic` or `fixed_traffic`), the keys in `flow_type_probability` and `flow_parameters` must be chosen from the corresponding list above.
 
