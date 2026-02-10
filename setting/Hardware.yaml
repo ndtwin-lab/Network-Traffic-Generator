@@ -1,7 +1,7 @@
 ---
 Hardware_Testbed:                
   data:                  
-    ndtwin_kernel: "http://10.10.x.x:8000"
+    ndtwin_kernel: "http://10.10.10.2:8000"
     recycle_interval: 10  # in seconds
     sleep_time: # sleep time between flow generation requests
       min: 0.4
@@ -16,14 +16,14 @@ Hardware_Testbed:
     udp_packet_length: "1460"  # in bytes, not including header, only payload, can use K for 1024 bytes, M for 1024*1024 bytes, etc.
 
 worker_node1:                
-  hostname: 10.10.x.x  
+  hostname: 10.10.10.5  
   username: "server1"   
-  password: "xxxxxx"  
+  password: "nslab123"  
   port: 22 
   groups:               
     - worker_node_servers
   data: # for configuring API server which receive flow generation requests
-    worker_node_server: "http://10.10.x.x:8000"
+    worker_node_server: "http://10.10.10.5:8000"
     retries: 5  # retry attempts for transient failures
     backoff_min_ms: 250.0  # minimum backoff time in milliseconds between
     backoff_max_ms: 500.0  # maximum backoff time in milliseconds between
@@ -63,14 +63,14 @@ worker_node1:
         h32 : "192.168.1.32"
 
 worker_node2:
-  hostname: 10.10.x.x
+  hostname: 10.10.10.6
   username: "server2"
-  password: "xxxxxx"
+  password: "nslab123"
   port: 22
   groups:
     - worker_node_servers
   data:
-    worker_node_server: "http://10.10.x.x:8000"
+    worker_node_server: "http://10.10.10.6:8000"
     retries: 10  # retry attempts for transient failures
     backoff_min_ms: 250.0  # minimum backoff time in milliseconds between
     backoff_max_ms: 500.0  # maximum backoff time in milliseconds between
@@ -110,14 +110,14 @@ worker_node2:
         h64 : "192.168.1.64"
 
 worker_node3:
-  hostname: 10.10.x.x
+  hostname: 10.10.10.7
   username: "server3"
-  password: "xxxxxx"
+  password: "nslab123"
   port: 22
   groups:
     - worker_node_servers
   data:
-    worker_node_server: "http://10.10.x.x:8000"
+    worker_node_server: "http://10.10.10.7:8000"
     retries: 10  # retry attempts for transient failures
     backoff_min_ms: 250.0  # minimum backoff time in milliseconds between
     backoff_max_ms: 500.0  # maximum backoff time in milliseconds between
@@ -157,14 +157,14 @@ worker_node3:
         h96 : "192.168.1.96"
 
 worker_node4:
-  hostname: 10.10.x.x
+  hostname: 10.10.10.8
   username: "server4"
-  password: "xxxxxx"
+  password: "nslab123"
   port: 22
   groups:
     - worker_node_servers
   data:
-    worker_node_server: "http://10.10.x.x:8000"
+    worker_node_server: "http://10.10.10.8:8000"
     retries: 10  # retry attempts for transient failures
     backoff_min_ms: 250.0  # minimum backoff time in milliseconds between
     backoff_max_ms: 500.0  # maximum backoff time in milliseconds between

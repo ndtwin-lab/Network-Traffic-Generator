@@ -2,6 +2,6 @@
 worker_node_servers:
   data:
     startup_commands:
-      - "source ~/ntg/bin/activate && cd Desktop/NTG && pwd && nohup uvicorn network_traffic_generator_worker_node:app --host 0.0.0.0 --port 8000 > uvi.log 2>&1 &"
+      - "ulimit -n 1048576 && source ~/ntg/bin/activate && cd Desktop/NTG && pwd && nohup uvicorn network_traffic_generator_worker_node:app --host 0.0.0.0 --port 8000 > uvi.log 2>&1 &"
     shutdown_commands:
       - "killall -9 uvicorn"
