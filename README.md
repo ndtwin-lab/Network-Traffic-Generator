@@ -74,6 +74,8 @@ Hardware_Testbed:
       exclude_ports:
         - 8000
     log_level: "DEBUG"
+    tcp_packet_length: "10K"  # in bytes, not including header, only payload, can use K for 1024 bytes, M for 1024*1024 bytes, etc.
+    udp_packet_length: "1460"  # in bytes, not including header, only payload, can use K for 1024 bytes, M for 1024*1024 bytes, etc.
 
 worker_node1:
   hostname: 10.10.xx.xx
@@ -104,6 +106,7 @@ Notes:
   - `max_port`: The maximum port number available for iperf flows.
   - `exclude_ports`: A list of ports to exclude from the available range (e.g., ports used by other services like the API server).
 - `log_level` sets the logging verbosity. Supported values: `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`.
+- `tcp_packet_length` and `udp_packet_length` set the payloads length of TCP and UDP packets.
 - `groups` must be a YAML list (e.g., `- worker_node_servers`).
 - `data.worker_node_server` must be reachable from the machine running `network_traffic_generator.py`.
 - `retries` specifies the number of retry attempts for worker nodes to restart iperf client.
@@ -124,6 +127,8 @@ Mininet_Testbed:
     sleep_time:
       min: 0.4
       max: 1.3
+    tcp_packet_length: "10K"  # in bytes, not including header, only payload, can use K for 1024 bytes, M for 1024*1024 bytes, etc.
+    udp_packet_length: "1460"  # in bytes, not including header, only payload, can use K for 1024 bytes, M for 1024*1024 bytes, etc.
 ```
 
 Notes:

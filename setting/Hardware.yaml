@@ -11,7 +11,9 @@ Hardware_Testbed:
       max_port: 10204
       exclude_ports:
         - 8000
-    log_level: "TRACE"  # TRACE, DEBUG, INFO, WARNING, ERROR
+    log_level: "DEBUG"  # TRACE, DEBUG, INFO, WARNING, ERROR
+    tcp_packet_length: "10K"  # in bytes, not including header, only payload, can use K for 1024 bytes, M for 1024*1024 bytes, etc.
+    udp_packet_length: "1460"  # in bytes, not including header, only payload, can use K for 1024 bytes, M for 1024*1024 bytes, etc.
 
 worker_node1:                
   hostname: 10.10.x.x  

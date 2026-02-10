@@ -125,28 +125,6 @@ LOCK = asyncio.Lock()
 CMD_LOCK = asyncio.Lock()
 RECYCLE_STOP_EVENT = asyncio.Event()
 
-async def _on_flow_finished(t) -> None:
-    """
-    Callback function invoked when a flow (iperf connection) has finished.
-    
-    This async function safely decrements the global RUNNING counter to track
-    the number of active flows. It uses a lock to ensure thread-safe updates
-    to the shared counter.
-    
-    Args:
-        t (int): The number of flows that have completed. Typically 1 for a
-                 single flow completion.
-    
-    Returns:
-        None
-    """
-    global RUNNING
-    async with LOCK:
-        logger.debug(f"Flow finished, current: {RUNNING} decreasing running count by {t}")
-        RUNNING -= t
-        if RUNNING < 0:
-            RUNNING = 0
-
 INTERFACE = None
 NTG_CONFIG = None
 
@@ -192,6 +170,9 @@ DEFAULT_FLOW_PARAMETERS = {
     "unlimited_size_limited_rate_limited_duration_udp": ['-u','-b','-t'],
     "limited_size_limited_rate_udp": ['-u','-n','-b']
 }
+
+TCP_PACKET_LENGTH = "10K"  # in bytes, not including header, only payload, can use K for 1024 bytes, M for 1024*1024 bytes, etc.
+UDP_PACKET_LENGTH = "1460"  # in bytes, not including header, only payload, can use K for 1024 bytes, M for 1024*1024 bytes, etc.
 
 def get_hardware_server_info(filtered_nornir:Nornir) -> Optional[Dict[str,Any]]:
     """
@@ -272,9 +253,8 @@ def command_line(net,config_file_path:str="NTG.yaml"):
     # == Interactive CLI or Custom Command Mode ==
     # After the setup, we can either enter the Mininet CLI for interactive commands,
     # or we can run custom commands to start servers and clients, manage links, etc.
-    global INTERFACE,NTG_CONFIG
+    global INTERFACE,NTG_CONFIG,TCP_PACKET_LENGTH,UDP_PACKET_LENGTH
 
-    
 
     NTG_CONFIG = InitNornir(config_file=config_file_path)
     ndtwin_kernel = None
@@ -284,6 +264,8 @@ def command_line(net,config_file_path:str="NTG.yaml"):
             mininet_testbed = NTG_CONFIG.inventory.hosts["Mininet_Testbed"]
             mininet_mode = mininet_testbed.data.get("mode","cli")
             log_level = mininet_testbed.data.get("log_level","DEBUG")
+            TCP_PACKET_LENGTH = mininet_testbed.data.get("tcp_packet_length",TCP_PACKET_LENGTH)
+            UDP_PACKET_LENGTH = mininet_testbed.data.get("udp_packet_length",UDP_PACKET_LENGTH)
             logger_config(level=log_level)
             if mininet_mode == "cli":
                 logger.info("Entering Mininet CLI mode...")
@@ -311,6 +293,8 @@ def command_line(net,config_file_path:str="NTG.yaml"):
             sleep_time = hardware_testbed.data.get("sleep_time",{"min":0.5,"max":1.5})
             ports_limitation = hardware_testbed.data.get("ports_limitation",{"min_port":5204,"max_port":16205,"exclude_ports":[8000]})
             ndtwin_kernel = hardware_testbed.data.get("ndtwin_kernel",None)
+            TCP_PACKET_LENGTH = hardware_testbed.data.get("tcp_packet_length",TCP_PACKET_LENGTH)
+            UDP_PACKET_LENGTH = hardware_testbed.data.get("udp_packet_length",UDP_PACKET_LENGTH)
 
             if worker_node_server is None:
                 raise ValueError("Failed to get Hardware server information")
@@ -374,7 +358,10 @@ def link_relationship_init(ndtwin_kernel=None):
                 time.sleep(2)
             else:
                 logger.info("Link relationships computed successfully.")
-                logger.debug(f"Connection relationships: {CONNECTIONS}")
+                logger.debug(f"Connection relationships: ") 
+                logger.debug(f"Near connections sample: {CONNECTIONS['near'][:5]}")
+                logger.debug(f"Middle connections sample: {CONNECTIONS['middle'][:5]}")
+                logger.debug(f"Far connections sample: {CONNECTIONS['far'][:5]}")
                 break
     except KeyboardInterrupt:
         logger.warning("Interrupted while computing link relationships.")
@@ -458,6 +445,27 @@ async def _run_custom_command_loop(net):
     except KeyboardInterrupt:
         await _handle_exit_command(leave=True)
 
+async def _on_flow_finished(t) -> None:
+    """
+    Callback function invoked when a flow (iperf connection) has finished.
+    
+    This async function safely decrements the global RUNNING counter to track
+    the number of active flows. It uses a lock to ensure thread-safe updates
+    to the shared counter.
+    
+    Args:
+        t (int): The number of flows that have completed. Typically 1 for a
+                 single flow completion.
+    
+    Returns:
+        None
+    """
+    global RUNNING
+    async with LOCK:
+        logger.debug(f"Flow finished, current: {RUNNING} decreasing running count by {t}")
+        RUNNING -= t
+        if RUNNING < 0:
+            RUNNING = 0
 
 async def ending_process(net):
     """
@@ -739,6 +747,9 @@ async def _handle_flow_command(net, args):
 
                     if 'udp' in type_name:
                         parameter['-u'] = ' '
+                        parameter['-l'] = UDP_PACKET_LENGTH
+                    if 'tcp' in type_name:
+                        parameter['-l'] = TCP_PACKET_LENGTH
                     if 'unlimited_duration' in type_name:
                         parameter['-t'] = '0'
 
@@ -807,10 +818,14 @@ async def _handle_flow_command(net, args):
 
                         if 'udp' in type_name:
                             parameter['-u'] = ' '
+                            parameter['-l'] = UDP_PACKET_LENGTH
+                        if 'tcp' in type_name:
+                            parameter['-l'] = TCP_PACKET_LENGTH
                         if 'unlimited_duration' in type_name:
                             parameter['-t'] = '0'
                         if 'limited_duration' in type_name:
                             parameter['-t'] = parameter.get('-t',fixed_traffic_duration)
+                        
 
                         parameter_list.append(parameter)
 
@@ -1055,10 +1070,6 @@ async def _handle_dist_command(net, args):
 
                         if '-t' in type_assignment[i]:
                             parameters['-t'] = float(t_values[t_cursor])
-                            if parameters['-t'] <= 1.0:
-                                parameters['-t'] = 1.0  # Ensure minimum duration of 1 second
-                            elif parameters['-t'] > 5.0:
-                                parameters['-t'] = 5.0  # Cap maximum duration to 5 seconds for fixed flows
                             t_cursor += 1
 
                         if '-n' in type_assignment[i]:
@@ -1071,6 +1082,9 @@ async def _handle_dist_command(net, args):
 
                         if '-u' in type_assignment[i]:
                             parameters['-u'] = ' '
+                            parameters['-l'] = UDP_PACKET_LENGTH
+                        else:
+                            parameters['-l'] = TCP_PACKET_LENGTH
                         
                         if '-un' in type_assignment[i]:
                             parameters['-t'] = '0'
@@ -1142,10 +1156,6 @@ async def _handle_dist_command(net, args):
 
                         if '-t' in type_assignment[i]:
                             parameters['-t'] = float(t_values[t_cursor])
-                            if parameters['-t'] <= 1.0:
-                                parameters['-t'] = 1.0  # Ensure minimum duration of 1 second
-                            elif parameters['-t'] > 5.0:
-                                parameters['-t'] = 5.0  # Cap maximum duration to 5 seconds for fixed flows
                             t_cursor += 1
 
                         if '-n' in type_assignment[i]:
@@ -1158,6 +1168,9 @@ async def _handle_dist_command(net, args):
 
                         if '-u' in type_assignment[i]:
                             parameters['-u'] = ' '
+                            parameters['-l'] = UDP_PACKET_LENGTH
+                        else:
+                            parameters['-l'] = TCP_PACKET_LENGTH
                         
                         if '-un' in type_assignment[i]:
                             parameters['-t'] = '0'

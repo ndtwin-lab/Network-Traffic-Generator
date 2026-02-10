@@ -47,6 +47,7 @@ class SenderReq(BaseModel):
     b: Optional[str] = Field(None, description='-b sending rate like "100M"')
     n: Optional[str] = Field(None, description='-n total bytes like "1G"')
     t: Optional[int] = Field(None, ge=0, le=36000, description="-t duration seconds")
+    l: Optional[str] = Field(None, description='-l length of buffer to read or write')
     start_time: Optional[str] = None
     iperf_version: Optional[str] = None
     fixed_traffic_duration: Optional[int] = None
@@ -305,7 +306,7 @@ def _start_subprocess_and_wait_with_retry(cmd: List[str], job_id: str) -> tuple:
         # Check for EAGAIN signature
         why,err_is_eagain = _json_text_mentions_eagain(out, err)
         if err_is_eagain:
-            logger.warning(f"[retry] {job_id} failed...{out}")
+            logger.info(f"[retry] {job_id} failed...{out}")
             if i < attempts - 1:
                 backoff_ms = random.uniform( BACKOFF_MIN_MS,  BACKOFF_MAX_MS)
                 try:
@@ -492,7 +493,6 @@ async def start_senders(reqs: SenderReqs):
                            "-p", str(req.port),
                            "-J",
                            "-4",
-                           "-l","10K"
                         ]
 
         if req.u:
@@ -505,6 +505,8 @@ async def start_senders(reqs: SenderReqs):
             cmd += ["-n", req.n]
         if req.t is not None:
             cmd += ["-t", str(req.t)]
+        if req.l is not None:
+            cmd += ["-l", req.l]
             
         job = _new_job("sender", cmd, base)
         RUNNERS[job.job_id] = asyncio.create_task(_run_and_capture_json(job.job_id, cmd, SENDER_SEM, req.fixed_traffic_duration,test_time=test_time))

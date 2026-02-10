@@ -37,36 +37,6 @@ class Communicator(ABC):
     def cleanup(self,loop:asyncio.AbstractEventLoop) -> None:
         ...
 
-class SenderReq(BaseModel):
-    c: str
-    port: int
-    u: bool = False
-    B: Optional[str] = None
-    cport: Optional[int]
-    b: Optional[str] = None
-    n: Optional[str] = None
-    t: Optional[int] = None
-    start_time: Optional[str] = None
-    fixed_traffic_duration: Optional[int] = None
-    iperf_version: Optional[str] = "iperf3"
-
-class ReceiverReq(BaseModel):
-    bind: Optional[str] = None
-    port: int
-    u: bool = False
-    one_off: bool = True
-    start_time: Optional[str] = None
-    fixed_traffic_duration: Optional[int] = None
-    wait_offset: Optional[float] = 0.0
-    iperf_version: Optional[str] = "iperf3"
-
-class SenderReqs(BaseModel):
-    reqs: List[SenderReq] = Field(default_factory=list)
-
-class ReceiverReqs(BaseModel):
-    reqs: List[ReceiverReq] = Field(default_factory=list)
-
-
 class MininetCommunicator(Communicator):
     def __init__(self,sleep_time: Dict[str,float],logger,on_flow_finished: Optional[Callable[[int], Awaitable[None]]] = None):
         super().__init__("Mininet")
@@ -138,10 +108,7 @@ class MininetCommunicator(Communicator):
             cmd_client = f"{iperf} -c {dst_host.IP()} "
             param_str = " ".join([f"{k} {v}" for k, v in parameter.items()])
 
-            if param_str.startswith('-n') and '-b' not in parameter:
-                param_str += ' -b 1G'
-
-            cmd_client += f" {param_str} -l 0.125K -p {port} {out_file_c} "
+            cmd_client += f" {param_str} -p {port} {out_file_c} "
 
             client_proc = await self.host_popen(src_host, cmd_client.split())
             self.logger.trace(f"Started client process {client_proc.pid} on {src} -> {dst}:{port}")
@@ -265,10 +232,7 @@ class MininetCommunicator(Communicator):
             cmd_client = f"{iperf} -c {dst_host.IP()} "
             param_str = " ".join([f"{k} {v}" for k, v in parameter.items()])
 
-            if param_str.startswith('-n') and '-b' not in parameter:
-                param_str += ' -b 1G'
-
-            cmd_client += f" {param_str} -l 0.125K -p {port} {out_file_c} "
+            cmd_client += f" {param_str} -p {port} {out_file_c} "
 
             cur_time = time.perf_counter_ns()
             while time.perf_counter_ns() - cur_time < duration * (10**9):
@@ -354,6 +318,35 @@ class MininetCommunicator(Communicator):
         await loop.run_in_executor(None, os.system, "sudo killall -s SIGTERM iperf3")
         await loop.run_in_executor(None, os.system, "sudo killall -s SIGTERM iperf")
 
+class SenderReq(BaseModel):
+    c: str
+    port: int
+    u: bool = False
+    B: Optional[str] = None
+    cport: Optional[int]
+    b: Optional[str] = None
+    n: Optional[str] = None
+    t: Optional[int] = None
+    l: Optional[str] = None
+    start_time: Optional[str] = None
+    fixed_traffic_duration: Optional[int] = None
+    iperf_version: Optional[str] = "iperf3"
+
+class ReceiverReq(BaseModel):
+    bind: Optional[str] = None
+    port: int
+    u: bool = False
+    one_off: bool = True
+    start_time: Optional[str] = None
+    fixed_traffic_duration: Optional[int] = None
+    wait_offset: Optional[float] = 0.0
+    iperf_version: Optional[str] = "iperf3"
+
+class SenderReqs(BaseModel):
+    reqs: List[SenderReq] = Field(default_factory=list)
+
+class ReceiverReqs(BaseModel):
+    reqs: List[ReceiverReq] = Field(default_factory=list)
 
 class HostClient:
     def __init__(self,logger):
@@ -422,7 +415,7 @@ class HostClient:
             return None, None
         if r.status_code == 200:
             try:
-                return r, 200
+                return r.json(), 200
             except Exception:
                 self.logger.warning(f"sender {body} malformed JSON")
                 return None, 200
@@ -476,7 +469,7 @@ class APICommunicator(Communicator):
         
         super().__init__("API")
         self.logger = logger
-        self.logger.debug(f"Setting : sleep_time={sleep_time}, recycle_interval={recycle_interval}, ports_limitation={ports_limitation}")
+        self.logger.debug(f"APICommunicator Setting : sleep_time={sleep_time}, recycle_interval={recycle_interval}, ports_limitation={ports_limitation}")
         self.on_flow_finished = on_flow_finished
         self.recycle_stop_event = recycle_stop_event
         self.recycle_port_ended = asyncio.Event()
@@ -681,6 +674,7 @@ class APICommunicator(Communicator):
                         b=parameter.get('-b',None),
                         n=parameter.get('-n'),
                         t= (int(parameter.get('-t')) if parameter.get('-t') is not None else None),
+                        l=parameter.get('-l', None),
                         start_time=start_time,
                         iperf_version=iperf,
                     )
@@ -758,6 +752,8 @@ class APICommunicator(Communicator):
             rreqs = {}
             self.logger.trace(dst_list)
             self.logger.trace(parameter_list)
+
+            # server requests
             try:
                 for dst, parameter in zip(dst_list, parameter_list):
                     port = await self.port_selector(dst)
@@ -826,6 +822,7 @@ class APICommunicator(Communicator):
 
             await asyncio.sleep(wait_offset)
 
+            # client requests 
             sreqs = {}
             try:
                 for src,dst,port,parameter in zip(src_list,dst_list,port_list,parameter_list):
@@ -847,6 +844,7 @@ class APICommunicator(Communicator):
                         b=parameter.get('-b',None),
                         n=parameter.get('-n'),
                         t= t_para if t_para != -1 else None,
+                        l = parameter.get('-l', None),
                         start_time=start_time,
                         fixed_traffic_duration= None if is_unlimited_duration else fixed_traffic_duration,
                         iperf_version=iperf,
