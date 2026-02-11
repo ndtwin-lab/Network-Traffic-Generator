@@ -317,6 +317,8 @@ def check_probability_and_parameter(traffic:dict, traffic_type:int,file_type:str
                 should_be_present = True
             elif "limited_duration"  in entry_name and traffic_type == 1: # passed fixed flow number.
                 should_be_present = True
+            elif param_base == "packet_payload_size":
+                should_be_present = True
             
             if not should_be_present:
                 return f"Parameter '{param_name}' should not be present in '{entry_name}' (flow type does not specify limited_{param_base})"
