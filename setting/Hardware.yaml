@@ -12,7 +12,7 @@ Hardware_Testbed:
       exclude_ports:
         - 8000
     log_level: "DEBUG"  # TRACE, DEBUG, INFO, WARNING, ERROR
-    tcp_packet_length: "10K"  # in bytes, not including header, only payload, can use K for 1024 bytes, M for 1024*1024 bytes, etc.
+    tcp_socket_write_length: "10K"  # in bytes, not including header, only payload, can use K for 1024 bytes, M for 1024*1024 bytes, etc.
     udp_packet_length: "1460"  # in bytes, not including header, only payload, can use K for 1024 bytes, M for 1024*1024 bytes, etc.
 
 worker_node1:                

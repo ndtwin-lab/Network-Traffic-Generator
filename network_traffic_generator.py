@@ -171,7 +171,7 @@ DEFAULT_FLOW_PARAMETERS = {
     "limited_size_limited_rate_udp": ['-u','-n','-b']
 }
 
-TCP_PACKET_LENGTH = "10K"  # in bytes, not including header, only payload, can use K for 1024 bytes, M for 1024*1024 bytes, etc.
+TCP_SOCKET_WRITE_LENGTH = "10K"  # in bytes, not including header, only payload, can use K for 1024 bytes, M for 1024*1024 bytes, etc.
 UDP_PACKET_LENGTH = "1460"  # in bytes, not including header, only payload, can use K for 1024 bytes, M for 1024*1024 bytes, etc.
 
 def get_hardware_server_info(filtered_nornir:Nornir) -> Optional[Dict[str,Any]]:
@@ -253,7 +253,7 @@ def command_line(net,config_file_path:str="NTG.yaml"):
     # == Interactive CLI or Custom Command Mode ==
     # After the setup, we can either enter the Mininet CLI for interactive commands,
     # or we can run custom commands to start servers and clients, manage links, etc.
-    global INTERFACE,NTG_CONFIG,TCP_PACKET_LENGTH,UDP_PACKET_LENGTH
+    global INTERFACE,NTG_CONFIG,TCP_SOCKET_WRITE_LENGTH,UDP_PACKET_LENGTH
 
 
     NTG_CONFIG = InitNornir(config_file=config_file_path)
@@ -264,7 +264,7 @@ def command_line(net,config_file_path:str="NTG.yaml"):
             mininet_testbed = NTG_CONFIG.inventory.hosts["Mininet_Testbed"]
             mininet_mode = mininet_testbed.data.get("mode","cli")
             log_level = mininet_testbed.data.get("log_level","DEBUG")
-            TCP_PACKET_LENGTH = mininet_testbed.data.get("tcp_packet_length",TCP_PACKET_LENGTH)
+            TCP_SOCKET_WRITE_LENGTH = mininet_testbed.data.get("tcp_socket_write_length",TCP_SOCKET_WRITE_LENGTH)
             UDP_PACKET_LENGTH = mininet_testbed.data.get("udp_packet_length",UDP_PACKET_LENGTH)
             logger_config(level=log_level)
             if mininet_mode == "cli":
@@ -293,7 +293,7 @@ def command_line(net,config_file_path:str="NTG.yaml"):
             sleep_time = hardware_testbed.data.get("sleep_time",{"min":0.5,"max":1.5})
             ports_limitation = hardware_testbed.data.get("ports_limitation",{"min_port":5204,"max_port":16205,"exclude_ports":[8000]})
             ndtwin_kernel = hardware_testbed.data.get("ndtwin_kernel",None)
-            TCP_PACKET_LENGTH = hardware_testbed.data.get("tcp_packet_length",TCP_PACKET_LENGTH)
+            TCP_SOCKET_WRITE_LENGTH = hardware_testbed.data.get("tcp_socket_write_length",TCP_SOCKET_WRITE_LENGTH)
             UDP_PACKET_LENGTH = hardware_testbed.data.get("udp_packet_length",UDP_PACKET_LENGTH)
 
             if worker_node_server is None:
@@ -634,6 +634,7 @@ async def _handle_flow_command(net, args):
         "duration(sec)": "-t",
         "size(bytes)": "-n",
         "rate(bits)": "-b",
+        "packet_payload_size(bytes)": "-l"
     }
 
     if "--config" not in args:
@@ -747,9 +748,10 @@ async def _handle_flow_command(net, args):
 
                     if 'udp' in type_name:
                         parameter['-u'] = ' '
-                        parameter['-l'] = UDP_PACKET_LENGTH
-                    if 'tcp' in type_name:
-                        parameter['-l'] = TCP_PACKET_LENGTH
+                        if '-l' not in parameter:
+                            parameter['-l'] = UDP_PACKET_LENGTH
+                    if 'tcp' in type_name and '-l' not in parameter:
+                        parameter['-l'] = TCP_SOCKET_WRITE_LENGTH
                     if 'unlimited_duration' in type_name:
                         parameter['-t'] = '0'
 
@@ -818,9 +820,10 @@ async def _handle_flow_command(net, args):
 
                         if 'udp' in type_name:
                             parameter['-u'] = ' '
-                            parameter['-l'] = UDP_PACKET_LENGTH
-                        if 'tcp' in type_name:
-                            parameter['-l'] = TCP_PACKET_LENGTH
+                            if '-l' not in parameter:
+                                parameter['-l'] = UDP_PACKET_LENGTH
+                        if 'tcp' in type_name and '-l' not in parameter:
+                            parameter['-l'] = TCP_SOCKET_WRITE_LENGTH
                         if 'unlimited_duration' in type_name:
                             parameter['-t'] = '0'
                         if 'limited_duration' in type_name:
@@ -1084,7 +1087,7 @@ async def _handle_dist_command(net, args):
                             parameters['-u'] = ' '
                             parameters['-l'] = UDP_PACKET_LENGTH
                         else:
-                            parameters['-l'] = TCP_PACKET_LENGTH
+                            parameters['-l'] = TCP_SOCKET_WRITE_LENGTH
                         
                         if '-un' in type_assignment[i]:
                             parameters['-t'] = '0'
@@ -1170,7 +1173,7 @@ async def _handle_dist_command(net, args):
                             parameters['-u'] = ' '
                             parameters['-l'] = UDP_PACKET_LENGTH
                         else:
-                            parameters['-l'] = TCP_PACKET_LENGTH
+                            parameters['-l'] = TCP_SOCKET_WRITE_LENGTH
                         
                         if '-un' in type_assignment[i]:
                             parameters['-t'] = '0'

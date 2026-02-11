@@ -74,7 +74,7 @@ Hardware_Testbed:
       exclude_ports:
         - 8000
     log_level: "DEBUG"
-    tcp_packet_length: "10K"  # in bytes, not including header, only payload, can use K for 1024 bytes, M for 1024*1024 bytes, etc.
+    tcp_socket_write_length: "10K"  # in bytes, not including header, only payload, can use K for 1024 bytes, M for 1024*1024 bytes, etc.
     udp_packet_length: "1460"  # in bytes, not including header, only payload, can use K for 1024 bytes, M for 1024*1024 bytes, etc.
 
 worker_node1:
@@ -106,7 +106,8 @@ Notes:
   - `max_port`: The maximum port number available for iperf flows.
   - `exclude_ports`: A list of ports to exclude from the available range (e.g., ports used by other services like the API server).
 - `log_level` sets the logging verbosity. Supported values: `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`.
-- `tcp_packet_length` and `udp_packet_length` set the payloads length of TCP and UDP packets.
+- `tcp_socket_write_length` sets the TCP socket write buffer length for each write operation (payload only, excluding headers).
+- `udp_packet_length` sets the UDP packet payload length (excluding headers).
 - `groups` must be a YAML list (e.g., `- worker_node_servers`).
 - `data.worker_node_server` must be reachable from the machine running `network_traffic_generator.py`.
 - `retries` specifies the number of retry attempts for worker nodes to restart iperf client.
@@ -127,7 +128,7 @@ Mininet_Testbed:
     sleep_time:
       min: 0.4
       max: 1.3
-    tcp_packet_length: "10K"  # in bytes, not including header, only payload, can use K for 1024 bytes, M for 1024*1024 bytes, etc.
+    tcp_socket_write_length: "10K"  # in bytes, not including header, only payload, can use K for 1024 bytes, M for 1024*1024 bytes, etc.
     udp_packet_length: "1460"  # in bytes, not including header, only payload, can use K for 1024 bytes, M for 1024*1024 bytes, etc.
 ```
 
@@ -165,6 +166,9 @@ Parameter format rules:
   - Defining the sending rate of flows.
 - `duration(sec)`: positive integer seconds. 
   - Defining how long will the flow keep alive.
+- `packet_payload_size(bytes)`: integer or suffixed with `K`, `M`, `G` (e.g., `1024`, `2K`)
+  - Defining the payload size of each packet (optional parameter for fine-tuning packet size).
+  - Can be added to any flow type.
 - Provide only the parameters that make sense for the chosen type:
   - limited size → requires `size(bytes)`
   - limited rate → requires `rate(bits)`
@@ -190,8 +194,10 @@ Supported flow types for `fixed_traffic` :
 
 - `limited_size_unlimited_rate_tcp`
 - `unlimited_size_limited_rate_limited_duration_tcp`
+- `unlimited_size_limited_rate_unlimited_duration_tcp`
 - `limited_size_limited_rate_tcp`
 - `unlimited_size_limited_rate_unlimited_duration_udp`
+- `unlimited_size_limited_rate_limited_duration_udp`
 - `limited_size_limited_rate_udp`
 
 Note: for each section (`varied_traffic` or `fixed_traffic`), the keys in `flow_type_probability` and `flow_parameters` must be chosen from the corresponding list above.
@@ -323,6 +329,8 @@ Example snippet (already present in `dist_template.json`):
     ]
 }
 ```
+
+**Notice:** we do not support to setting `packet_payload_size(bytes)` parameter in any flow type when using `dist` command.
 
 ## Support Commands in NTG
 
