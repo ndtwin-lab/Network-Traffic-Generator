@@ -104,7 +104,7 @@ if __name__ == "__main__":
         controller=RemoteController)
   net.start()
   # change `CLI(net)` to the function below.
-  command_line(net)
+  command_line(net,config_file_path="NTG.yaml")
 ```
 
 After that, you can follow the [NTG User Manual](../README.md) to generate flows on Mininet using NTG.
