@@ -12,14 +12,34 @@ This guide explains how to use commands in our **Network Traffic Generator(NTG)*
 
 ## Files Overview
 
-![](./document_picture/files.png)
+```
+├── development_guide
+│   └── README.md
+├── installation_guide
+│   └── README.md
+├── dist_template.json
+├── flow_template.json
+├── LICENSE
+├── network_traffic_generator.py
+├── network_traffic_generator_worker_node.py
+├── NTG.yaml
+├── README.md
+├── setting
+│   ├── API_server_startup.yaml
+│   ├── Hardware.yaml
+│   └── Mininet.yaml
+└── Utilis
+    ├── command_utils.py
+    ├── communicator.py
+    └── distance_seperate.py
+```
 
 - `network_traffic_generator.py`: Interactive CLI that accepts commands.
-- `network_traffic_generator_worker_node.py`: The worker node which receive flow generation requests from controller and manage iperf3 processes.
+- `network_traffic_generator_worker_node.py`: The worker node which receive flow generation requests from `network_traffic_generator.py` and manage iperf3 processes. Only used in Hardware.
 - `Utilis/`: Contains some related util functions.
-- `setting/Hardware.yaml`: Nornir host inventory (testbed controller + worker nodes + on-site host IPs).
+- `setting/Hardware.yaml`: NTG setting file for Hardware testbed. Contains IPs of NDTwin Kernel, worker nodes and on-site host IPs.
 - `setting/API_server_startup.yaml`: Nornir group file (startup/shutdown commands for worker-node API servers).
-- `setting/Mininet.yaml`: Mininet runtime mode and local ndtwin kernel (basic metadata).
+- `setting/Mininet.yaml`: NTG setting file for Mininet. Contains runtime mode and local ndtwin kernel.
 - `NTG.yaml`: Nornir configuration pointing to the inventory files above.
 - `flow_template.json` & `dist_template.json`: Example configuration for intervals and flow generation parameters.
 
