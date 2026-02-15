@@ -22,6 +22,7 @@ This guide explains how to use commands in our **Network Traffic Generator(NTG)*
 ├── LICENSE
 ├── network_traffic_generator.py
 ├── network_traffic_generator_worker_node.py
+├── testbed_topo.py
 ├── NTG.yaml
 ├── README.md
 ├── setting
@@ -35,7 +36,8 @@ This guide explains how to use commands in our **Network Traffic Generator(NTG)*
 ```
 
 - `network_traffic_generator.py`: Interactive CLI that accepts commands.
-- `network_traffic_generator_worker_node.py`: The worker node which receive flow generation requests from `network_traffic_generator.py` and manage iperf3 processes. Only used in Hardware.
+- `network_traffic_generator_worker_node.py`: The worker node which receive flow generation requests from `network_traffic_generator.py` and manage iperf3 processes. **Only used in Hardware testbed**.
+- `testbed_topo.py`: The example Mininet topology code.
 - `Utilis/`: Contains some related util functions.
 - `setting/Hardware.yaml`: NTG setting file for Hardware testbed. Contains IPs of NDTwin Kernel, worker nodes and on-site host IPs.
 - `setting/API_server_startup.yaml`: Nornir group file (startup/shutdown commands for worker-node API servers).
@@ -51,7 +53,7 @@ Ensure the following files exist and match your environment.
 inventory:
   plugin: SimpleInventory
   options:
-    host_file: "./setting/Hardware.yaml"
+    host_file: "./setting/Mininet.yaml"
     group_file: "./setting/API_server_startup.yaml"
 
 runner:
@@ -63,7 +65,7 @@ logging:
   enabled: false
 ```
 Notes:
-- If you want to use `Mininet`, please change the path of `host_file` to `./setting/Mininet.yaml`
+- If you want to use `Hardware`, please change the path of `host_file` to `./setting/Hardware.yaml`
 
 `setting/API_server_startup.yaml`
 ```yaml
@@ -130,11 +132,11 @@ Notes:
 - `udp_packet_length` sets the UDP packet payload length (excluding headers).
 - `groups` must be a YAML list (e.g., `- worker_node_servers`).
 - `data.worker_node_server` must be reachable from the machine running `network_traffic_generator.py`.
-- `retries` specifies the number of retry attempts for worker nodes to restart iperf client.
+- `retries` specifies the number of retry attempts for worker nodes to restart iperf client when facing `Connection refused` issue.
 - `backoff_min_ms` and `backoff_max_ms` define the minimum and maximum backoff time (in milliseconds) between retry attempts.
 - `thread_count` sets the maximum number of concurrent threads for starting iperf client/server on each worker node.
 - `data.on_site_hosts` maps logical host names (e.g., h1) to IP addresses. If you define lots of hosts in one worker node, please list all of them.
-- Our NTG will distribute the role of client/server in iperf using the logical host names from the **NDTwin Kernel**. Thus, please make sure the logical host name is the same in **NDTwin Kernel** and **NTG**.
+- Our NTG will distribute the role of client/server in iperf using the logical host names from the NDTwin Kernel. Thus, **please make sure the logical host name is the same in NDTwin Kernel and NTG**.
 
 `setting/Mininet.yaml`
 
@@ -222,7 +224,7 @@ Supported flow types for `fixed_traffic` :
 
 Note: for each section (`varied_traffic` or `fixed_traffic`), the keys in `flow_type_probability` and `flow_parameters` must be chosen from the corresponding list above.
 
-Example snippet (already present in `flow_template.json`):
+Example snippet :
 
 ```json
 {
@@ -277,6 +279,7 @@ Example snippet (already present in `flow_template.json`):
         "flow_parameters": {
             "unlimited_size_limited_rate_limited_duration_tcp": {
                 "rate(bits)": "37.4M"
+
             }
         }
     }
@@ -307,7 +310,7 @@ bin_midpoint,probability
 - `bin_midpoint`: The representative value for that bin (e.g., average flow size in bytes).
 - `probability`: The probability of a flow having the characteristic of this bin. The sum of probabilities should be 1.0.
 
-Example snippet (already present in `dist_template.json`):
+Example snippet :
 
 ```json
 {
@@ -362,18 +365,23 @@ Our NTG support commands as below :
 - `dist` : flows' parameters come from distribution files.
 - `exit` : exit the NTG.
 
-**Notice that when using `flow` and `dist` command, you must add `--config flow_template.json` to specify which flow configuration files to use in one experiment.**
+**Notice that when using `flow` and `dist` command, you must add `--config <json files>` to specify which flow configuration files to use in one experiment.**
 
 ### How to Use
 
 Our NTG support **path complete** and **syntax complete**. Thus, you can use `tab` and `arrow keys` to type the command.
+Syntax complete after typing `fl`.
 ![complete1](./document_picture/complete1.png)
+Can view supported command by `tab`.
 ![complete2](./document_picture/complete2.png)
+Can use `arrow-down` and `enter` to select the `flow` command.
 ![complete3](./document_picture/complete3.png)
+Path complete after `--config` and one `space`.
 ![complete4](./document_picture/complete4.png)
+Still have path complete after the dir `flow_exp/` was typed.
 ![complete5](./document_picture/complete5.png)
 
-If your'e configuration file and command are correct, NTG will start generate flows as below:
+If your'e configuration file and command are correct, NTG will start generate flows and the logs are as below:
 ![success1](./document_picture/success1.png)
 However, If you have syntax error or configuration file error, it will show some error words as below:
 ![error1](./document_picture/error1.png)
@@ -391,7 +399,7 @@ However, If you have syntax error or configuration file error, it will show some
 
 - You must have installed `Mininet`, `Ryu`, and `NDTwin`.
 - You must have downloaded `NTG` and move those files and directories into folders with Mininet topology file written in `python`.
-- You must make sure that the topology codes have been changed as [installation manual]()
+- You must make sure that the topology codes have been changed as [installation manual](./installation_guide/README.md)
 - You must modify the `NTG.yaml`'s `host_file` into `./setting/Mininet.yaml ` and parameters in `./setting/Mininet.yaml`.
 
 ### Start Up Process
@@ -407,7 +415,7 @@ ryu-manager intelligent_router.py ryu.app.rest_topology ryu.app.ofctl_rest --ofp
 2. Start the topology.
 
 ```bash
-sudo python ./topo.py
+sudo python ./testbed_topo.py
 ```
 
 ![mininet](./document_picture/mininet.png)

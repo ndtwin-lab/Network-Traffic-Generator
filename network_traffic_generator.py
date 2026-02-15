@@ -7,20 +7,21 @@ import random
 import asyncio
 import os
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from loguru import logger
+import json
+import pandas as pd
+import numpy as np
+import sys
+import signal
 
 try:
     from mininet.cli import CLI
 except ImportError:
     CLI = None
 
-from loguru import logger
-import json
-import pandas as pd
-import numpy as np
 from Utilis.distance_seperate import distance_partition
 from Utilis.command_utils import _create_exp_dir, fast_random_choice, collect_api_info, file_checker, execute_command
 from Utilis.communicator import MininetCommunicator, APICommunicator
-import sys
 
 from nornir import InitNornir
 from nornir.core.filter import F
@@ -216,6 +217,20 @@ def get_hardware_server_info(filtered_nornir:Nornir) -> Optional[Dict[str,Any]]:
     else:
         return None
 
+def signal_handler(sig, frame):
+    """
+    Handle keyboard interrupt signal (SIGINT) for graceful shutdown.
+    
+    This function is registered as a signal handler for SIGINT (Ctrl+C) to
+    allow the program to exit gracefully when interrupted by the user.
+    
+    Args:
+        sig: The signal number (not used in this handler).
+        frame: The current stack frame (not used in this handler).
+    """
+    logger.warning("Keyboard interrupt received. Stopping ongoing tasks and exiting...")
+    _handle_exit_command(leave=True)
+
 def command_line(net,config_file_path:str="NTG.yaml"):
     """
     Entry point for the interactive command-line interface for network traffic generation.
@@ -316,6 +331,11 @@ def command_line(net,config_file_path:str="NTG.yaml"):
 
         logger.info("Entering Custom Command mode...")
         link_relationship_init(ndtwin_kernel=ndtwin_kernel)
+        
+        # make keyboard interrupt trigger the ending process for latter commands.
+        
+        signal.signal(signal.SIGINT, signal_handler)
+        
         asyncio.run(_run_custom_command_loop(net))
 
     except KeyboardInterrupt:
@@ -1256,7 +1276,6 @@ async def _handle_exit_command(type="CLI", show_msg: bool = True, leave: Optiona
 
     if leave:
         NTG_CONFIG.run(task=execute_command,mode=2)
-    # await loop.run_in_executor(None, gdm.terminate)
 
 if __name__ == "__main__":
     command_line(None,"NTG.yaml")
