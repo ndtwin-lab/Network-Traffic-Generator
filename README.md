@@ -4,11 +4,24 @@
 
 This guide explains how to use commands in our **Network Traffic Generator(NTG)** to generate traffic flows in intervals with specific parameters. For the installation, you can follow this [links](./installation_guide/README.md). In this manual, we demonstrate things as below :
 
-- [NTG configuration](#network-traffic-generator-configuration)
-- [Flow generation configuration](#flow-command-configuration)
-- [Support commands in NTG](#support-commands-in-ntg)
-- [How to use NTG in Mininet](#how-to-use-ntg-in-mininet)
-- [How to use NTG in Hardware Testbed](#how-to-use-ntg-in-hardware)
+- [Network Traffic Generator — User Manual](#network-traffic-generator--user-manual)
+  - [Files Overview](#files-overview)
+  - [Network Traffic Generator Configuration](#network-traffic-generator-configuration)
+  - [Flow Generation Configuration](#flow-generation-configuration)
+    - [`flow` Command Configuration](#flow-command-configuration)
+    - [`dist` Command Configuration](#dist-command-configuration)
+  - [Support Commands in NTG](#support-commands-in-ntg)
+    - [Commands](#commands)
+    - [How to Use](#how-to-use)
+    - [Notice](#notice)
+  - [How to use NTG in Mininet](#how-to-use-ntg-in-mininet)
+    - [Pre-request](#pre-request)
+    - [Start Up Process](#start-up-process)
+  - [How to use NTG in Hardware](#how-to-use-ntg-in-hardware)
+    - [Pre-request](#pre-request-1)
+    - [Start Up Process](#start-up-process-1)
+  - [Tips](#tips)
+  - [Troubleshooting](#troubleshooting)
 
 ## Files Overview
 
@@ -65,7 +78,7 @@ logging:
   enabled: false
 ```
 Notes:
-- If you want to use `Hardware`, please change the path of `host_file` to `./setting/Hardware.yaml`
+- If you want to use `Mininet`, please change the path of `host_file` to `./setting/Mininet.yaml`
 
 `setting/API_server_startup.yaml`
 ```yaml
@@ -129,10 +142,10 @@ Notes:
   - `exclude_ports`: A list of ports to exclude from the available range (e.g., ports used by other services like the API server).
 - `log_level` sets the logging verbosity. Supported values: `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`.
 - `tcp_socket_write_length` sets the TCP socket write buffer length for each write operation (payload only, excluding headers).
-- `udp_packet_length` sets the UDP packet payload length (excluding headers).
+- `udp_packet_length` set the payloads length of UDP packets.(excluding headers).
 - `groups` must be a YAML list (e.g., `- worker_node_servers`).
 - `data.worker_node_server` must be reachable from the machine running `network_traffic_generator.py`.
-- `retries` specifies the number of retry attempts for worker nodes to restart iperf client when facing `Connection refused` issue.
+- `retries` specifies the number of retry attempts for worker nodes to restart iperf client when some connection errors occur.
 - `backoff_min_ms` and `backoff_max_ms` define the minimum and maximum backoff time (in milliseconds) between retry attempts.
 - `thread_count` sets the maximum number of concurrent threads for starting iperf client/server on each worker node.
 - `data.on_site_hosts` maps logical host names (e.g., h1) to IP addresses. If you define lots of hosts in one worker node, please list all of them.
@@ -150,8 +163,8 @@ Mininet_Testbed:
     sleep_time:
       min: 0.4
       max: 1.3
-    tcp_socket_write_length: "10K"  # in bytes, not including header, only payload, can use K for 1024 bytes, M for 1024*1024 bytes, etc.
-    udp_packet_length: "1460"  # in bytes, not including header, only payload, can use K for 1024 bytes, M for 1024*1024 bytes, etc.
+    tcp_socket_write_length: "10K"  
+    udp_packet_length: "1460"
 ```
 
 Notes:
@@ -224,7 +237,7 @@ Supported flow types for `fixed_traffic` :
 
 Note: for each section (`varied_traffic` or `fixed_traffic`), the keys in `flow_type_probability` and `flow_parameters` must be chosen from the corresponding list above.
 
-Example snippet :
+Example snippet (already present in `flow_template.json`):
 
 ```json
 {
@@ -261,7 +274,7 @@ Example snippet :
 }
 ```
 
-#### Notice that the `limited_duration` in `fixed_traffic` will use `interval_duration(d/h/m/s)` as the default duration setting. If you would like to use the `interval_duration(d/h/m/s)` as the flow duration, then just make it empty as below
+**Notice that the `limited_duration` in `fixed_traffic` will use `interval_duration(d/h/m/s)` as the default duration setting. If you would like to use the `interval_duration(d/h/m/s)` as the flow duration, then just make it empty as below**
 
 ```json
 {
@@ -310,7 +323,7 @@ bin_midpoint,probability
 - `bin_midpoint`: The representative value for that bin (e.g., average flow size in bytes).
 - `probability`: The probability of a flow having the characteristic of this bin. The sum of probabilities should be 1.0.
 
-Example snippet :
+Example snippet (already present in `dist_template.json`):
 
 ```json
 {
@@ -370,6 +383,7 @@ Our NTG support commands as below :
 ### How to Use
 
 Our NTG support **path complete** and **syntax complete**. Thus, you can use `tab` and `arrow keys` to type the command.
+
 Syntax complete after typing `fl`.
 ![complete1](./document_picture/complete1.png)
 Can view supported command by `tab`.
@@ -382,8 +396,11 @@ Still have path complete after the dir `flow_exp/` was typed.
 ![complete5](./document_picture/complete5.png)
 
 If your'e configuration file and command are correct, NTG will start generate flows and the logs are as below:
+
 ![success1](./document_picture/success1.png)
+
 However, If you have syntax error or configuration file error, it will show some error words as below:
+
 ![error1](./document_picture/error1.png)
 ![error1](./document_picture/error2.png)
 
@@ -406,7 +423,7 @@ However, If you have syntax error or configuration file error, it will show some
 
 We will use Mininet topology code: `testbed_topo.py` as an example.
 
-1. Start the Ryu Controller in **first** terminal.
+1. Start the Ryu Controller in the **first** terminal.
 
 ```bash
 ryu-manager intelligent_router.py ryu.app.rest_topology ryu.app.ofctl_rest --ofp-tcp-listen-port 6633 --observe-link
@@ -414,7 +431,7 @@ ryu-manager intelligent_router.py ryu.app.rest_topology ryu.app.ofctl_rest --ofp
 
 ![ryu](./document_picture/ryu.png)
 
-2. Start the topology in **second** terminal.
+2. Start the topology in the **second** terminal.
 
 ```bash
 sudo ./testbed_topo.py
@@ -430,7 +447,7 @@ chmod +x ./testbed_topo.py
 
 ![mininet1](./document_picture/mininet1.png)
 
-4. Only when the terminal of Ryu Controller shows `all-destination paths installed.`, you can start the NDTwin. Typically, you need to wait about **1 minutes**
+4. Only when the terminal of Ryu Controller shows `all-destination paths installed.` can you start the NDTwin. Typically, you need to wait about **1 minutes**
 
 ![start_trigger](./document_picture/start_trigger.png)
 
