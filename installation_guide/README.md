@@ -13,10 +13,11 @@
 
 - **Linux** system is needed for all machines.
 - Python 3.8+ recommended.
+- Ubuntu 20.04 recommended.
 
 Install Python + pip:
 
-Ubuntu/Debian:
+Ubuntu:
 
 ```bash
 sudo apt update
@@ -108,6 +109,8 @@ if __name__ == "__main__":
 ```
 
 After that, you can follow the [NTG User Manual](../README.md) to generate flows on Mininet using NTG.
+
+**Notice: you can also look at [testbed_topo.py](../testbed_topo.py) for reference.**
 
 ## NTG for Hardware Testbed
 

@@ -391,7 +391,7 @@ However, If you have syntax error or configuration file error, it will show some
 
 - Our NTG do not support experiment interrupt. Thus, if you want to interrupt one running experiment, it will immediately shut down the NTG as below:
   
-![interrupt1](./document_picture/interrupt1.png)
+![interrupt1](./document_picture/interrupt.png)
 
 ## How to use NTG in Mininet
 
@@ -399,12 +399,14 @@ However, If you have syntax error or configuration file error, it will show some
 
 - You must have installed `Mininet`, `Ryu`, and `NDTwin`.
 - You must have downloaded `NTG` and move those files and directories into folders with Mininet topology file written in `python`.
-- You must make sure that the topology codes have been changed as [installation manual](./installation_guide/README.md)
+- You must make sure that the topology codes have been changed as [installation manual](./installation_guide/README.md) or just use example topology `testbed_topo.py`.
 - You must modify the `NTG.yaml`'s `host_file` into `./setting/Mininet.yaml ` and parameters in `./setting/Mininet.yaml`.
 
 ### Start Up Process
 
-1. Start the Ryu Controller.
+We will use Mininet topology code: `testbed_topo.py` as an example.
+
+1. Start the Ryu Controller in **first** terminal.
 
 ```bash
 ryu-manager intelligent_router.py ryu.app.rest_topology ryu.app.ofctl_rest --ofp-tcp-listen-port 6633 --observe-link
@@ -412,10 +414,14 @@ ryu-manager intelligent_router.py ryu.app.rest_topology ryu.app.ofctl_rest --ofp
 
 ![ryu](./document_picture/ryu.png)
 
-2. Start the topology.
+2. Start the topology in **second** terminal.
 
 ```bash
-sudo python ./testbed_topo.py
+sudo ./testbed_topo.py
+# Or you're custom topology.
+
+# if unable to run testbed_topo.py
+chmod +x ./testbed_topo.py
 ```
 
 ![mininet](./document_picture/mininet.png)
@@ -424,14 +430,18 @@ sudo python ./testbed_topo.py
 
 ![mininet1](./document_picture/mininet1.png)
 
-4. Start the NDTwin.
+4. Only when the terminal of Ryu Controller shows `all-destination paths installed.`, you can start the NDTwin. Typically, you need to wait about **1 minutes**
+
+![start_trigger](./document_picture/start_trigger.png)
+
+5. Start the NDTwin in the **third** terminal.
 
 ```bash
 sudo -E bin/ndtwin_kernel --loglevel info
 ```
 ![ndtwin](./document_picture/ndtwin.png)
 
-5. Now, you can start using NTG
+6. Now, you can start using NTG
 
 ![mininet2](./document_picture/mininet2.png)
 
@@ -481,7 +491,7 @@ uvicorn network_traffic_generator_worker_node:app --host 0.0.0.0 --port 8000
 
 ## Troubleshooting
 
-- If flows do not start: 
+- If flows do not start:
   - Confirm API servers are up, ports opened, and the `network_traffic_generator.py` process can reach them.
   - It may due to the CPU resources are not enough for you're flow configurations. Please lower the `flow numbers` or parameters to fix the question.
   - Since every iperf process will open **one file** and the **number of opening file may be limited**, the machine would be unable to run new iperf process when you have generated a huge amount of flows. Thus, you can change the `ulimits -n` or `ulimits -u` to a higher values to solve the problem.
