@@ -224,12 +224,35 @@ def signal_handler(sig, frame):
     This function is registered as a signal handler for SIGINT (Ctrl+C) to
     allow the program to exit gracefully when interrupted by the user.
     
+    When an asyncio event loop is already running (the normal case during
+    command processing), the async cleanup is scheduled as a task on that
+    loop via ``loop.create_task()``. If no loop is running (e.g. SIGINT
+    arrives before ``asyncio.run()``), ``asyncio.run()`` is used as a
+    fallback.
+    
     Args:
         sig: The signal number (not used in this handler).
         frame: The current stack frame (not used in this handler).
     """
     logger.warning("Keyboard interrupt received. Stopping ongoing tasks and exiting...")
-    _handle_exit_command(leave=True)
+    try:
+        loop = asyncio.get_running_loop()
+        # Event loop is running – schedule the cleanup on it
+        loop.create_task(_signal_shutdown())
+    except RuntimeError:
+        # No running event loop – safe to use asyncio.run()
+        asyncio.run(_handle_exit_command(leave=True))
+
+async def _signal_shutdown():
+    """
+    Perform async cleanup and cancel all remaining tasks so that
+    ``asyncio.run()`` can finish and the process exits cleanly.
+    """
+    await _handle_exit_command(leave=True)
+    # Cancel every other task so asyncio.run() can return
+    for task in asyncio.all_tasks():
+        if task is not asyncio.current_task():
+            task.cancel()
 
 def command_line(net,config_file_path:str="NTG.yaml"):
     """
